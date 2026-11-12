@@ -314,4 +314,15 @@ export const EN: Record<string, string> = {
   "{name} von der Merkliste entfernt": "{name} removed from saved places",
   "Link kopiert – ab damit in die WhatsApp-Gruppe! 🔗": "Link copied – off to the group chat! 🔗",
   "Link steht in der Adresszeile bereit.": "The link is ready in the address bar.",
+  // Startzustand ohne Startort, laufende Suche
+  "Startort wählen": "Choose a starting point",
+  "Startort wählen, um zu suchen": "Choose a starting point to search",
+  "Wo soll’s losgehen?": "Where are you starting from?",
+  "Wähle einen Startort, dann geht die Suche los.": "Choose a starting point and the search begins.",
+  "Gib einen Startort ein oder nutze GPS. Wähle dann Zeitraum und Wunschwetter – Sunify zeigt dir, wo es passt.":
+    "Enter a starting point or use GPS. Then pick your dates and perfect weather – Sunify shows you where it fits.",
+  "Liste anzeigen": "Show list",
+  "Zur Karte": "To the map",
+  "Kräftiger Wind": "Strong wind",
+  "deinem Wunschwetter": "your perfect weather",
 };

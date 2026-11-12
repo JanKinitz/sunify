@@ -4,14 +4,14 @@
 // Favoriten) und verdrahtet die Kern-Screens. Die Daten kommen von POST /api/search.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CloudOff, Heart, List, LoaderCircle, Map as MapIcon, Share2, SlidersHorizontal, X } from "lucide-react";
+import { CloudOff, Heart, List, LoaderCircle, Map as MapIcon, MapPin, Share2, SlidersHorizontal, X } from "lucide-react";
 import { fetchSearch, type SearchData } from "@/lib/api";
 import { formatRange, formatWeekdayRange } from "@/lib/dates";
 import { defaultFilters, filtersFromQuery, filtersToQuery } from "@/lib/filters";
 import { groupResults } from "@/lib/grouping";
 import { fmtDist, formatInt, getLocale, tr, trn } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-react";
-import { originLabel } from "@/lib/origins";
+import { hasOrigin, originLabel } from "@/lib/origins";
 import { describeDestination, sortResults } from "@/lib/search";
 import type { Destination, Filters, SearchResult, SortKey } from "@/lib/types";
 import AiSearchBar from "./AiSearchBar";
@@ -122,7 +122,8 @@ export default function SunifyApp() {
     setFilters((prev) => ({ ...prev, ...patch }));
   }, []);
 
-  const reset = useCallback(() => setFilters(defaultFilters()), []);
+  // Zurücksetzen behält den gewählten Startort
+  const reset = useCallback(() => setFilters((prev) => ({ ...defaultFilters(), origin: prev.origin })), []);
 
   const notify = useCallback((message: string) => setToast(message), []);
 
@@ -150,6 +151,13 @@ export default function SunifyApp() {
   // Suche bei jeder Filter- oder Sprachänderung neu ausführen (kurz verzögert, damit Slider flüssig bleiben).
   // Bei einem Sprachwechsel kommen so Ortsnamen und Regionen in der neuen Sprache.
   useEffect(() => {
+    // Ohne Startort wird nicht gesucht (Startzustand der App)
+    if (!hasOrigin(filters.origin)) {
+      setData(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     const controller = new AbortController();
     setLoading(true);
     const timer = window.setTimeout(() => {
@@ -262,14 +270,20 @@ export default function SunifyApp() {
 
   const rangeLabel = formatWeekdayRange(activeFilters.startDate, activeFilters.endDate);
   const countLabel = trn(results.length, "1 Treffer", "{n} Treffer");
-  const initialLoading = loading && !data;
+  const noOrigin = !hasOrigin(filters.origin);
+  const initialLoading = !noOrigin && loading && !data;
+  // Filter geändert, neue Antwort steht noch aus: alte Trefferzahl nicht mehr anzeigen
+  const pending = !noOrigin && (loading || (data !== null && data.filters !== filters));
+  const statusLabel = noOrigin ? tr("Startort wählen") : pending ? tr("Suche läuft …") : countLabel;
 
   const listHeader = (
     <div className="flex items-center justify-between gap-2">
       <div className="min-w-0">
         <h2 className="flex items-center gap-2 truncate text-[15px] font-bold text-ink-900">
           <span className="truncate">
-            {initialLoading
+            {noOrigin
+              ? tr("Wo soll’s losgehen?")
+              : initialLoading
               ? tr("Suche läuft …")
               : results.length === 0
                 ? tr("Keine Treffer")
@@ -280,8 +294,11 @@ export default function SunifyApp() {
                       near: formatInt(results.length - strictCount),
                     })}
           </span>
-          {loading && <LoaderCircle className="h-3.5 w-3.5 shrink-0 animate-spin text-sun-500" />}
+          {pending && <LoaderCircle className="h-3.5 w-3.5 shrink-0 animate-spin text-sun-500" />}
         </h2>
+        {noOrigin ? (
+          <p className="truncate text-xs text-ink-500">{tr("Wähle einen Startort, dann geht die Suche los.")}</p>
+        ) : (
         <p className="truncate text-xs text-ink-500">
           {formatRange(activeFilters.startDate, activeFilters.endDate)} ·{" "}
           {tr("{dist} um {origin}", { dist: fmtDist(activeFilters.radiusKm), origin: activeFilters.origin.name })}
@@ -289,12 +306,30 @@ export default function SunifyApp() {
           {totalMatches > results.length &&
             ` · ${tr("Top {n} von {total}", { n: results.length, total: formatInt(totalMatches) })}`}
         </p>
+        )}
       </div>
       {results.length > 0 && <SortSelect sort={sort} onSort={setSort} />}
     </div>
   );
 
-  const listBody = initialLoading ? (
+  const listBody = noOrigin ? (
+    <div className="rounded-2xl border border-ink-100 bg-white p-5 text-center shadow-soft">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-sun-50 text-sun-600">
+        <MapPin className="h-7 w-7" />
+      </div>
+      <h3 className="mt-3 text-lg font-bold text-ink-900">{tr("Wo soll’s losgehen?")}</h3>
+      <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-ink-600">
+        {tr("Gib einen Startort ein oder nutze GPS. Wähle dann Zeitraum und Wunschwetter – Sunify zeigt dir, wo es passt.")}
+      </p>
+      <button
+        type="button"
+        onClick={() => setMobileFilters(true)}
+        className="mt-4 rounded-xl bg-sun-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sun-600 lg:hidden"
+      >
+        {tr("Startort wählen")}
+      </button>
+    </div>
+  ) : initialLoading ? (
     <div className="flex flex-col gap-3" aria-hidden="true">
       {[0, 1, 2].map((i) => (
         <div key={i} className="h-56 animate-pulse rounded-2xl border border-ink-100 bg-white" />
@@ -317,6 +352,7 @@ export default function SunifyApp() {
     </div>
   ) : (
     <>
+      <div className={pending ? "pointer-events-none opacity-50 transition-opacity" : "transition-opacity"} aria-busy={pending}>
       {results.length === 0 ? (
         <EmptyState filters={activeFilters} relaxations={relaxations} onApply={update} onReset={reset} />
       ) : (
@@ -331,6 +367,7 @@ export default function SunifyApp() {
           onShowOnMap={showOnMap}
         />
       )}
+      </div>
       <DataSources updatedAt={data?.weatherUpdatedAt ?? null} />
     </>
   );
@@ -396,7 +433,7 @@ export default function SunifyApp() {
         <aside className="thin-scroll hidden w-[330px] shrink-0 overflow-y-auto border-r border-ink-100 bg-ink-50 lg:block xl:w-[350px]">
           <FilterPanel
             filters={filters}
-            resultCount={results.length}
+            resultCount={pending ? null : results.length}
             onChange={update}
             onReset={reset}
             onNotify={notify}
@@ -422,7 +459,7 @@ export default function SunifyApp() {
           <div className="pointer-events-none absolute left-3 top-3 z-[1000] flex flex-col items-start gap-2">
             <div className="rounded-xl bg-white/95 px-3 py-2 text-xs shadow-soft backdrop-blur">
               <div className="font-bold text-ink-900">
-                {countLabel} · {rangeLabel}
+                {statusLabel} · {rangeLabel}
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-500">
                 <span className="flex items-center gap-1">
@@ -460,7 +497,8 @@ export default function SunifyApp() {
               onClick={() => setSheetOpen(true)}
               className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[1000] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-lift transition active:scale-95 lg:hidden"
             >
-              <List className="h-4 w-4" /> {tr("Liste anzeigen ({count})", { count: countLabel })}
+              {pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <List className="h-4 w-4" />}{" "}
+              {pending || noOrigin ? tr("Liste anzeigen") : tr("Liste anzeigen ({count})", { count: countLabel })}
             </button>
           )}
         </section>
@@ -524,7 +562,7 @@ export default function SunifyApp() {
             <div className="thin-scroll flex-1 overflow-y-auto">
               <FilterPanel
                 filters={filters}
-                resultCount={results.length}
+                resultCount={pending ? null : results.length}
                 onChange={update}
                 onReset={reset}
                 onNotify={notify}
@@ -534,11 +572,19 @@ export default function SunifyApp() {
               <button
                 type="button"
                 onClick={() => setMobileFilters(false)}
-                className="w-full rounded-xl bg-sun-500 px-4 py-3 text-sm font-bold text-white shadow-soft transition hover:bg-sun-600"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-sun-500 px-4 py-3 text-sm font-bold text-white shadow-soft transition hover:bg-sun-600"
               >
-                {results.length === 0
-                  ? tr("Keine Treffer – Vorschläge ansehen")
-                  : tr("{count} auf der Karte anzeigen", { count: countLabel })}
+                {noOrigin ? (
+                  tr("Zur Karte")
+                ) : pending ? (
+                  <>
+                    <LoaderCircle className="h-4 w-4 animate-spin" /> {tr("Suche läuft …")}
+                  </>
+                ) : results.length === 0 ? (
+                  tr("Keine Treffer – Vorschläge ansehen")
+                ) : (
+                  tr("{count} auf der Karte anzeigen", { count: countLabel })
+                )}
               </button>
             </div>
           </div>

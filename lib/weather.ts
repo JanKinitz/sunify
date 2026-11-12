@@ -49,7 +49,7 @@ export function windLabel(kmh: number): string {
   if (kmh < 20) return tr("Leichte Brise");
   if (kmh < 30) return tr("Mäßiger Wind");
   if (kmh < 45) return tr("Frischer Wind");
-  return tr("Wind egal");
+  return tr("Kräftiger Wind");
 }
 
 export function tempLabel(temp: number): string {

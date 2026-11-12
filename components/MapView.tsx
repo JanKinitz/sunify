@@ -18,6 +18,7 @@ import {
 } from "react-leaflet";
 import { tempUnit, tempValue, tr } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-react";
+import { hasOrigin } from "@/lib/origins";
 import type { Origin, SearchResult } from "@/lib/types";
 import { weatherEmoji } from "@/lib/weather";
 
@@ -166,8 +167,13 @@ function MapController({
     zoomend: () => onZoom(map.getZoom()),
   });
 
-  // Radius-Kreis immer vollständig sichtbar halten
+  // Radius-Kreis immer vollständig sichtbar halten (ohne Startort: Europa im Überblick)
+  const active = hasOrigin(origin);
   useEffect(() => {
+    if (!active) {
+      map.setView([50, 10], 4, { animate: true });
+      return;
+    }
     const dLat = radiusKm / 111.32;
     const dLon = radiusKm / (111.32 * Math.cos((origin.lat * Math.PI) / 180));
     map.fitBounds(
@@ -177,7 +183,7 @@ function MapController({
       ],
       { padding: [28, 28], animate: true, duration: 0.3 }
     );
-  }, [map, origin.lat, origin.lon, radiusKm]);
+  }, [map, active, origin.lat, origin.lon, radiusKm]);
 
   // Sanft zum ausgewählten Ort schwenken
   const focusId = focus?.id ?? null;
@@ -285,8 +291,8 @@ export default function MapView({
     <MapContainer
       ref={setMap}
       center={[origin.lat, origin.lon]}
-      zoom={7}
-      minZoom={5}
+      zoom={hasOrigin(origin) ? 7 : 4}
+      minZoom={3}
       maxZoom={MAX_ZOOM}
       zoomControl={false}
       scrollWheelZoom
@@ -307,22 +313,26 @@ export default function MapView({
         onZoom={setZoom}
       />
 
-      {/* Suchradius-Overlay */}
-      <Circle
-        center={[origin.lat, origin.lon]}
-        radius={radiusKm * 1000}
-        pathOptions={{
-          color: "#f98307",
-          weight: 2,
-          dashArray: "7 7",
-          fillColor: "#ffa620",
-          fillOpacity: 0.09,
-        }}
-        interactive={false}
-      />
+      {hasOrigin(origin) && (
+        <>
+        {/* Suchradius-Overlay */}
+        <Circle
+          center={[origin.lat, origin.lon]}
+          radius={radiusKm * 1000}
+          pathOptions={{
+            color: "#f98307",
+            weight: 2,
+            dashArray: "7 7",
+            fillColor: "#ffa620",
+            fillOpacity: 0.09,
+          }}
+          interactive={false}
+        />
 
-      {/* Eigener Standort */}
-      <Marker position={[origin.lat, origin.lon]} icon={originIcon()} interactive={false} keyboard={false} />
+        {/* Eigener Standort */}
+        <Marker position={[origin.lat, origin.lon]} icon={originIcon()} interactive={false} keyboard={false} />
+        </>
+      )}
 
       {/* Orte im Radius ohne Wetter-Treffer (gedimmt) */}
       {otherMarkers.map(({ result, icon }) => (

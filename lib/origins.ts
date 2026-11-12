@@ -26,7 +26,12 @@ export const POPULAR_ORIGINS: Origin[] = [
   { id: "innsbruck", name: "Innsbruck", lat: 47.2692, lon: 11.4041 },
 ];
 
-export const DEFAULT_ORIGIN: Origin = POPULAR_ORIGINS[0];
+/** Noch kein Startort gewählt (Startzustand der App) */
+export const NO_ORIGIN: Origin = { id: "", name: "", lat: 50, lon: 10 };
+
+export function hasOrigin(origin: Origin): boolean {
+  return origin.id !== "";
+}
 
 /** Anzeigename eines Startorts in der gewählten Sprache (bekannte Städte haben einen Eintrag im Wörterbuch). */
 export function originLabel(origin: Origin, translate: (s: string) => string): string {

@@ -1,7 +1,7 @@
 // Client-seitige Auswertung der Suchergebnisse: Tages-Nachweis (inkl. Toleranzbereich), Kennzahlen,
 // Sortierung und Fahrzeit. Die eigentliche Suche läuft in der Datenbank (search_destinations_v2).
 
-import { TOLERANCE_SLACK } from "./categories";
+import { anyTemp, anyWind, TOLERANCE_SLACK } from "./categories";
 import { tr } from "./i18n";
 import type {
   CheckState,
@@ -58,9 +58,11 @@ function state(exact: boolean, loose: boolean): CheckState {
 export function checkDay(day: DailyForecast, filters: Filters, tolerance: Tolerance = filters.tolerance): DayCheck {
   const slack = TOLERANCE_SLACK[tolerance];
   const maxP = maxPrecipFor(filters.precipMode);
-  const temp = state(day.tempMax >= filters.minTemp, day.tempMax >= filters.minTemp - slack.temp);
+  const minT = anyTemp(filters.minTemp) ? Number.NEGATIVE_INFINITY : filters.minTemp;
+  const maxW = anyWind(filters.maxWind) ? Number.POSITIVE_INFINITY : filters.maxWind;
+  const temp = state(day.tempMax >= minT, day.tempMax >= minT - slack.temp);
   const precip = state(day.precip <= maxP, day.precip <= maxP + slack.precip);
-  const wind = state(day.wind <= filters.maxWind, day.wind <= filters.maxWind + slack.wind);
+  const wind = state(day.wind <= maxW, day.wind <= maxW + slack.wind);
   const sun = state(day.sunshine >= filters.minSun, day.sunshine >= filters.minSun - slack.sun);
   const all = [temp, precip, wind, sun];
   return { day, temp, precip, wind, sun, allOk: all.every((s) => s === "ok"), allNear: all.every((s) => s !== "fail") };

@@ -1,33 +1,28 @@
 // Filter-Standardwerte und (De-)Serialisierung in URL-Query-Parameter ("Suche teilen").
 
-import { DEFAULT_ORIGIN, POPULAR_ORIGINS } from "./origins";
-import { seasonalNormals } from "./season";
+import { hasOrigin, NO_ORIGIN, POPULAR_ORIGINS } from "./origins";
 import { clampToForecast, isValidISO, rangeForPreset } from "./dates";
-import { CATEGORIES } from "./categories";
+import { CATEGORIES, SUN_MAX, TEMP_MAX, TEMP_MIN, WIND_MAX, WIND_MIN } from "./categories";
 import { tr } from "./i18n";
 import { RADIUS_MAX, RADIUS_MIN } from "./search";
 import type { Category, DatePreset, Filters, PrecipMode, Tolerance } from "./types";
 
-export const TEMP_MIN = -5;
-export const TEMP_MAX = 35;
-export const WIND_MIN = 5;
-export const WIND_MAX = 60;
-export const SUN_MAX = 12;
+export { SUN_MAX, TEMP_MAX, TEMP_MIN, WIND_MAX, WIND_MIN };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
-/** Jahreszeitlich sinnvolle Startwerte, damit die erste Suche realistische Treffer zeigt. */
+/** Startzustand: kein Startort, keine Wetter-Kriterien (alle Regler auf „egal“).
+ *  Gesucht wird erst, wenn ein Startort gewählt ist. */
 export function defaultFilters(): Filters {
-  const normals = seasonalNormals();
   return {
-    origin: DEFAULT_ORIGIN,
+    origin: NO_ORIGIN,
     radiusKm: 200,
     datePreset: "weekend",
     ...rangeForPreset("weekend"),
-    minTemp: Math.round(normals.tempMax + 1),
-    precipMode: "almost",
-    maxWind: 30,
-    minSun: Math.round(normals.maxSun * 0.4),
+    minTemp: TEMP_MIN,
+    precipMode: "any",
+    maxWind: WIND_MAX,
+    minSun: 0,
     category: "all",
     tolerance: 0,
   };
@@ -38,7 +33,9 @@ const PRECIP: PrecipMode[] = ["dry", "almost", "any"];
 
 export function filtersToQuery(filters: Filters): string {
   const q = new URLSearchParams();
-  if (filters.origin.id === "gps" || !POPULAR_ORIGINS.some((o) => o.id === filters.origin.id)) {
+  if (!hasOrigin(filters.origin)) {
+    // noch kein Startort: nichts in den Link schreiben
+  } else if (filters.origin.id === "gps" || !POPULAR_ORIGINS.some((o) => o.id === filters.origin.id)) {
     // Eigener oder gesuchter Standort: gerundete Koordinaten in den Link schreiben (~1 km genau).
     // Der Name wird nur bei gesuchten Orten übernommen, nicht beim GPS-Standort.
     q.set("lat", filters.origin.lat.toFixed(2));

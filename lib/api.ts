@@ -2,6 +2,7 @@
 
 import { getLocale, tr, trn } from "./i18n";
 import type { Relaxation } from "./search";
+import { anyTemp, anyWind } from "./categories";
 import { maxPrecipFor } from "./search";
 import type { DailyForecast, Destination, Filters, TagKey } from "./types";
 
@@ -172,9 +173,9 @@ export async function fetchSearch(filters: Filters, favoriteIds: number[], signa
         startDate: filters.startDate,
         endDate: filters.endDate,
         criteria: {
-          minTempMax: filters.minTemp,
+          minTempMax: anyTemp(filters.minTemp) ? -60 : filters.minTemp,
           maxPrecipitationSum: Number.isFinite(maxPrecip) ? maxPrecip : null,
-          maxWindSpeed: filters.maxWind,
+          maxWindSpeed: anyWind(filters.maxWind) ? 500 : filters.maxWind,
           minSunshineHours: filters.minSun,
         },
         tolerance: filters.tolerance,

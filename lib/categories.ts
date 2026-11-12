@@ -11,6 +11,18 @@ export const CATEGORY_TAGS: Record<Exclude<Category, "all">, TagKey[]> = {
   wellness: ["wellness"],
 };
 
+/** Grenzen der Wetter-Regler. Am Anschlag bedeutet der Regler „egal“ (kein Kriterium). */
+export const TEMP_MIN = -5;
+export const TEMP_MAX = 35;
+export const WIND_MIN = 5;
+export const WIND_MAX = 60;
+export const SUN_MAX = 12;
+
+/** Temperatur-Regler ganz links: keine Mindesttemperatur */
+export const anyTemp = (minTemp: number) => minTemp <= TEMP_MIN;
+/** Wind-Regler ganz rechts: keine Windgrenze */
+export const anyWind = (maxWind: number) => maxWind >= WIND_MAX;
+
 export const CATEGORIES: Category[] = ["all", "mountains", "water", "historic", "wine", "wellness"];
 
 /** Spielraum je Toleranzstufe – identisch mit der SQL-Funktion search_destinations_v2 */

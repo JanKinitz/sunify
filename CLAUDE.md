@@ -71,6 +71,10 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
   nur im Produktions-Build. Installieren-Button in der Top-Bar, sobald der Browser es anbietet.
 - **Aktivitätsprofile** (`lib/profiles.ts`): Wandern, Strand, Städtetrip, Rad, Wein, Wellness – setzen saisonale
   Filterwerte, danach frei anpassbar.
+- **Startzustand:** kein Startort, alle Wetter-Regler auf „egal“ (Temperatur ganz links, Wind ganz rechts,
+  Regen egal, 0 Std. Sonne); gesucht wird erst mit Startort. „Zurücksetzen“ behält den Startort.
+- Während eine Suche läuft (`pending`), zeigen Buttons und Legende „Suche läuft …“ statt der alten Trefferzahl,
+  die alte Liste wird abgeblendet.
 - Desktop: Filter links, Karte ~60 %, Liste ~40 %. Mobil: Vollbild-Karte, Bottom-Sheet, Filter als Vollbild-Sheet.
 - Karten-Pills `☀️ 18°C | Ort`; Fast-Treffer gestrichelt gelb (`.is-near`); Sammel-Pills bei Überlappung.
 - Farben: Grün = erfüllt, Gelb = im Toleranzbereich, Rot = verfehlt.

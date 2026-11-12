@@ -15,9 +15,10 @@ import {
   Wind,
 } from "lucide-react";
 import { geocodePlaces } from "@/lib/geocode";
-import { fmtDist, fmtPrecip, fmtSpeed, fmtTempSpaced, formatDate, tr } from "@/lib/i18n";
+import { fmtDist, fmtPrecip, fmtSpeed, fmtTempSpaced, formatDate, tr, trn } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-react";
-import { POPULAR_ORIGINS } from "@/lib/origins";
+import { hasOrigin, POPULAR_ORIGINS } from "@/lib/origins";
+import { anyTemp, anyWind } from "@/lib/categories";
 import { activeProfile, PROFILES } from "@/lib/profiles";
 import {
   addDays,
@@ -33,7 +34,8 @@ import { tempColor, tempLabel, windLabel } from "@/lib/weather";
 
 interface FilterPanelProps {
   filters: Filters;
-  resultCount: number;
+  /** null = Suche läuft gerade */
+  resultCount: number | null;
   onChange: (patch: Partial<Filters>) => void;
   onReset: () => void;
   onNotify: (message: string) => void;
@@ -463,8 +465,8 @@ export default function FilterPanel({
             </div>
             <RangeField
               label={tr("Mindestens (Tageshöchstwert)")}
-              valueLabel={`≥ ${fmtTempSpaced(filters.minTemp)}`}
-              hint={tempLabel(filters.minTemp)}
+              valueLabel={anyTemp(filters.minTemp) ? tr("Egal") : `≥ ${fmtTempSpaced(filters.minTemp)}`}
+              hint={anyTemp(filters.minTemp) ? undefined : tempLabel(filters.minTemp)}
               min={TEMP_MIN}
               max={TEMP_MAX}
               value={filters.minTemp}
@@ -506,8 +508,8 @@ export default function FilterPanel({
             </div>
             <RangeField
               label={tr("Maximal")}
-              valueLabel={fmtSpeed(filters.maxWind)}
-              hint={windLabel(filters.maxWind)}
+              valueLabel={anyWind(filters.maxWind) ? tr("Egal") : fmtSpeed(filters.maxWind)}
+              hint={anyWind(filters.maxWind) ? undefined : windLabel(filters.maxWind)}
               min={WIND_MIN}
               max={WIND_MAX}
               step={5}
@@ -594,7 +596,13 @@ export default function FilterPanel({
 
       <div className="flex items-center justify-between px-1 pb-2 text-sm">
         <span className="font-medium text-ink-600">
-          {resultCount === 0 ? tr("Keine Treffer") : tr("{n} Treffer", { n: resultCount })}
+          {!hasOrigin(filters.origin)
+            ? tr("Startort wählen, um zu suchen")
+            : resultCount === null
+              ? tr("Suche läuft …")
+              : resultCount === 0
+                ? tr("Keine Treffer")
+                : trn(resultCount, "1 Treffer", "{n} Treffer")}
         </span>
         <button
           type="button"

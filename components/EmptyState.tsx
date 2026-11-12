@@ -7,6 +7,7 @@ import { CircleDashed, CloudOff, Maximize2, RotateCcw, Sparkles, Thermometer } f
 import { formatWeekdayRange } from "@/lib/dates";
 import { fmtDist, fmtPrecip, fmtSpeed, fmtTempSpaced, formatNumber, tr, trn } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-react";
+import { anyTemp, anyWind } from "@/lib/categories";
 import { maxPrecipFor, type Relaxation } from "@/lib/search";
 import type { Filters } from "@/lib/types";
 
@@ -18,11 +19,13 @@ interface EmptyStateProps {
 }
 
 function criteriaText(filters: Filters): string {
-  const parts = [`≥ ${fmtTempSpaced(filters.minTemp)}`];
+  const parts: string[] = [];
+  if (!anyTemp(filters.minTemp)) parts.push(`≥ ${fmtTempSpaced(filters.minTemp)}`);
   const maxP = maxPrecipFor(filters.precipMode);
   if (Number.isFinite(maxP)) parts.push(`${maxP === 0 ? "" : "≤ "}${fmtPrecip(maxP)} ${tr("Regen")}`);
-  parts.push(`≤ ${fmtSpeed(filters.maxWind)} ${tr("Wind")}`);
+  if (!anyWind(filters.maxWind)) parts.push(`≤ ${fmtSpeed(filters.maxWind)} ${tr("Wind")}`);
   if (filters.minSun > 0) parts.push(`≥ ${formatNumber(filters.minSun)} ${tr("Std. Sonne")}`);
+  if (parts.length === 0) return tr("deinem Wunschwetter");
   if (parts.length === 1) return parts[0];
   return `${parts.slice(0, -1).join(", ")} ${tr("und")} ${parts[parts.length - 1]}`;
 }

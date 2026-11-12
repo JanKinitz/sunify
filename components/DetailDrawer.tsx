@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { countryName } from "@/lib/api";
+import { anyTemp, anyWind } from "@/lib/categories";
 import { addDays, formatDayMonth, formatRange, formatShort, weekdayShort } from "@/lib/dates";
 import {
   fmtDist,
@@ -388,8 +389,15 @@ export default function DetailDrawer({
               })}
             </div>
             <p className="mt-3 text-[11px] leading-snug text-ink-400">
-              {tr("Deine Kriterien")}: ≥ {fmtTempSpaced(filters.minTemp)} · {precipCriterion} · ≤ {fmtSpeed(filters.maxWind)}{" "}
-              {tr("Wind")} · ≥ {formatNumber(filters.minSun)} {tr("Std. Sonne")}
+              {tr("Deine Kriterien")}:{" "}
+              {[
+                anyTemp(filters.minTemp) ? null : `≥ ${fmtTempSpaced(filters.minTemp)}`,
+                precipCriterion,
+                anyWind(filters.maxWind) ? null : `≤ ${fmtSpeed(filters.maxWind)} ${tr("Wind")}`,
+                filters.minSun > 0 ? `≥ ${formatNumber(filters.minSun)} ${tr("Std. Sonne")}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
               {toleranceText}.
               {d.tempCorrection !== 0 && (
                 <>
