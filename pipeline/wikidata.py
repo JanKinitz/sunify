@@ -26,6 +26,16 @@ SELECT ?gn (MAX(?links) AS ?sitelinks) (SAMPLE(?img) AS ?image) WHERE {
 } GROUP BY ?gn
 """
 
+# Rückfall für große Länder (DE, FR, US …), bei denen die Länder-Abfrage das Zeitlimit von Wikidata
+# überschreitet: gezielte Abfrage über die GeoNames-IDs der eigenen Orte, in Paketen.
+MAIN_BY_IDS = """
+SELECT ?gn (MAX(?links) AS ?sitelinks) (SAMPLE(?img) AS ?image) WHERE {
+  VALUES ?gn { %s }
+  ?item wdt:P1566 ?gn ; wikibase:sitelinks ?links .
+  OPTIONAL { ?item wdt:P18 ?img }
+} GROUP BY ?gn
+"""
+
 KIND_QUERY = """
 SELECT DISTINCT ?gn ?kind WHERE {
   ?country wdt:P297 "%s" .
@@ -38,6 +48,10 @@ SELECT DISTINCT ?gn ?kind WHERE {
   UNION { ?item wdt:P206 ?w . ?w wdt:P31 ?wt . VALUES ?wt { wd:Q165 wd:Q9430 wd:Q39594 wd:Q1322134 } BIND("coast" AS ?kind) }
 }
 """
+
+KIND_BY_IDS = KIND_QUERY.replace('?country wdt:P297 "%s" .\n  ?item wdt:P17 ?country ; wdt:P1566 ?gn .', "VALUES ?gn { %s }\n  ?item wdt:P1566 ?gn .")
+assert "VALUES ?gn" in KIND_BY_IDS
+ID_CHUNK = 1500
 
 
 def _sparql(query: str) -> list[dict]:
@@ -61,31 +75,68 @@ def file_name_from_url(url: str) -> str:
     return unquote(url.rsplit("/", 1)[-1]).replace("_", " ")[:300]
 
 
-def fetch_country(country: str) -> tuple[dict[int, tuple[int, str | None]], dict[int, set[str]], str | None]:
-    """Liefert ({geonameid: (sitelinks, bilddatei)}, {geonameid: {merkmale}}, fehler)."""
+def _read_main(rows, info):
+    for row in rows:
+        gid = _gid(row["gn"]["value"])
+        if gid is None:
+            continue
+        links = int(row.get("sitelinks", {}).get("value", 0) or 0)
+        img = row.get("image", {}).get("value")
+        info[gid] = (links, file_name_from_url(img) if img else None)
+
+
+def _read_kinds(rows, kinds):
+    for row in rows:
+        gid = _gid(row["gn"]["value"])
+        if gid is not None:
+            kinds.setdefault(gid, set()).add(row["kind"]["value"])
+
+
+def _by_ids(template: str, gids: list[int], reader, target) -> str | None:
+    """Fragt Wikidata paketweise über GeoNames-IDs ab; liefert eine Fehlermeldung, falls Pakete fehlen."""
+    failed = 0
+    for i in range(0, len(gids), ID_CHUNK):
+        chunk = gids[i : i + ID_CHUNK]
+        values = " ".join(f'"{g}"' for g in chunk)
+        try:
+            reader(_sparql(template % values), target)
+        except Exception:
+            failed += 1
+        time.sleep(1)
+    return f"{failed} Pakete fehlgeschlagen" if failed else None
+
+
+def fetch_country(
+    country: str, gids: list[int] | None = None
+) -> tuple[dict[int, tuple[int, str | None]], dict[int, set[str]], str | None]:
+    """Liefert ({geonameid: (sitelinks, bilddatei)}, {geonameid: {merkmale}}, fehler).
+
+    Überschreitet die Länder-Abfrage das Zeitlimit, wird über die GeoNames-IDs (gids) nachgefragt."""
     info: dict[int, tuple[int, str | None]] = {}
     kinds: dict[int, set[str]] = {}
-    error = None
+    errors = []
     try:
-        for row in _sparql(MAIN_QUERY % country):
-            gid = _gid(row["gn"]["value"])
-            if gid is None:
-                continue
-            links = int(row.get("sitelinks", {}).get("value", 0) or 0)
-            img = row.get("image", {}).get("value")
-            info[gid] = (links, file_name_from_url(img) if img else None)
-    except Exception as e:  # Zeitüberschreitung bei sehr großen Ländern: Ort bekommt nur den Grundwert
-        error = f"Hauptabfrage: {e}"
-    time.sleep(1)
-    try:
-        for row in _sparql(KIND_QUERY % country):
-            gid = _gid(row["gn"]["value"])
-            if gid is not None:
-                kinds.setdefault(gid, set()).add(row["kind"]["value"])
+        _read_main(_sparql(MAIN_QUERY % country), info)
     except Exception as e:
-        error = (error + "; " if error else "") + f"Merkmale: {e}"
+        if gids:
+            print(f"   {country}: Länder-Abfrage zu groß, frage {len(gids)} Orte einzeln in Paketen ab", flush=True)
+            err = _by_ids(MAIN_BY_IDS, gids, _read_main, info)
+            if err:
+                errors.append(f"Hauptabfrage: {err}")
+        else:
+            errors.append(f"Hauptabfrage: {e}")
     time.sleep(1)
-    return info, kinds, error
+    try:
+        _read_kinds(_sparql(KIND_QUERY % country), kinds)
+    except Exception as e:
+        if gids:
+            err = _by_ids(KIND_BY_IDS, gids, _read_kinds, kinds)
+            if err:
+                errors.append(f"Merkmale: {err}")
+        else:
+            errors.append(f"Merkmale: {e}")
+    time.sleep(1)
+    return info, kinds, "; ".join(errors) or None
 
 
 _TAG_RE = re.compile(r"<[^>]+>")
@@ -107,7 +158,7 @@ def fetch_image_credits(files: list[str]) -> dict[str, tuple[str, str]]:
         try:
             data = get_json(
                 COMMONS_API,
-                params={
+                data={
                     "action": "query",
                     "format": "json",
                     "formatversion": "2",

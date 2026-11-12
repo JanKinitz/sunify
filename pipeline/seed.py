@@ -41,13 +41,17 @@ def collect() -> dict:
     wiki: dict[int, tuple[int, str | None]] = {}
     kinds: dict[int, set[str]] = {}
     failed = []
+    ids_by_country: dict[str, list[int]] = {}
+    for p in places:
+        ids_by_country.setdefault(p.country, []).append(p.geoname_id)
     for i, cc in enumerate(countries, 1):
-        info, k, err = wikidata.fetch_country(cc)
+        info, k, err = wikidata.fetch_country(cc, ids_by_country.get(cc))
         wiki.update(info)
         for gid, ks in k.items():
             kinds.setdefault(gid, set()).update(ks)
         if err:
             failed.append(cc)
+            log(f"   {cc} unvollständig: {err}")
         if i % 25 == 0:
             log(f"   {i}/{len(countries)} Länder")
     if failed:
