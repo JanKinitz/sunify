@@ -1,0 +1,6 @@
+# Dateien, die nicht zu Vercel hochgeladen werden (zusätzlich zu .gitignore)
+*.docx
+*.bat
+SPEC.md
+docker-compose.yml
+.cache

@@ -1,0 +1,22 @@
+# Abhängigkeiten und Build-Ausgaben
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+npm-debug.log*
+
+# Zugangsdaten – niemals ins Repository
+.env
+.env*.local
+
+# Lokale Caches und Tool-Ordner
+.cache/
+.vercel/
+.netlify/
+__pycache__/
+*.pyc
+
+# Persönliche Unterlagen (öffentliches Repository)
+*.docx
+SPEC.md
+~$*

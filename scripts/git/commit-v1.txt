@@ -1,0 +1,7 @@
+Sunify 1.0
+
+Stand der Version 1.0: Next.js-App mit Supabase-Datenbank (DACH-Raster),
+täglichem Open-Meteo-Wetterimport und Hosting auf Vercel.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

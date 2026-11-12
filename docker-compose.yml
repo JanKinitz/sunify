@@ -1,0 +1,20 @@
+# Lokale PostGIS-Datenbank als Alternative zu Supabase (nur für die Entwicklung).
+# Start:  docker compose up -d      Stopp:  docker compose down
+# Passende Verbindung in .env.local:
+#   DATABASE_URL=postgresql://sunify:sunify@localhost:5432/sunify
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: sunify-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sunify
+      POSTGRES_PASSWORD: sunify
+      POSTGRES_DB: sunify
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - sunify-db-data:/var/lib/postgresql/data
+
+volumes:
+  sunify-db-data:
