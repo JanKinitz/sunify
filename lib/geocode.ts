@@ -1,11 +1,10 @@
 // Live-Geocoding für das Startort-Feld über die kostenlose Photon-API (OpenStreetMap-Daten,
-// kein API-Key). Wird direkt aus dem Browser aufgerufen.
+// kein API-Key), weltweit. Wird direkt aus dem Browser aufgerufen.
 
+import { getLocale } from "./i18n";
 import type { Origin } from "./types";
 
 const PHOTON_URL = "https://photon.komoot.io/api/";
-/** Mitteleuropa – bevorzugt Treffer im und um den DACH-Raum */
-const BBOX = "2.0,43.5,20.0,56.5";
 /** Photon-Ergebnistypen, die als Startort taugen (keine Straßen, Häuser, Landkreise) */
 const PLACE_TYPES = new Set(["city", "district", "locality"]);
 
@@ -24,7 +23,8 @@ interface PhotonFeature {
 }
 
 export async function geocodePlaces(query: string, signal?: AbortSignal): Promise<Origin[]> {
-  const params = new URLSearchParams({ q: query, lang: "de", limit: "12", bbox: BBOX });
+  // weltweit; Ortsnamen in der gewählten Sprache
+  const params = new URLSearchParams({ q: query, lang: getLocale(), limit: "12" });
   const response = await fetch(`${PHOTON_URL}?${params.toString()}`, { signal });
   if (!response.ok) throw new Error(`Geocoding HTTP ${response.status}`);
   const data = (await response.json()) as { features?: PhotonFeature[] };

@@ -16,6 +16,8 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet";
+import { tempUnit, tempValue, tr } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n-react";
 import type { Origin, SearchResult } from "@/lib/types";
 import { weatherEmoji } from "@/lib/weather";
 
@@ -83,35 +85,37 @@ function clusterResults(results: SearchResult[], zoom: number): Cluster[] {
 
 function pillIcon(result: SearchResult, active: boolean, fav: boolean): L.DivIcon {
   const emoji = weatherEmoji(result.days[0]?.weatherCode ?? 2);
-  const classes = ["sunify-pill", active ? "is-active" : "", fav ? "is-fav" : ""].join(" ");
+  const near = result.strict === false;
+  const classes = ["sunify-pill", active ? "is-active" : "", fav ? "is-fav" : "", near ? "is-near" : ""].join(" ");
+  const title = near ? tr("Fast-Treffer: {pct} % Übereinstimmung", { pct: result.matchPct ?? 0 }) : "";
   return L.divIcon({
     className: "sunify-marker",
     iconSize: [0, 0],
     iconAnchor: [0, 0],
-    html: `<div class="${classes}"><span>${emoji}</span><span>${Math.round(
+    html: `<div class="${classes}"${title ? ` title="${escapeHtml(title)}"` : ""}><span>${emoji}</span><span>${tempValue(
       result.avgTempMax
-    )}°C</span><span class="sep">|</span><span class="name">${escapeHtml(
+    )}${tempUnit()}</span><span class="sep">|</span><span class="name">${escapeHtml(
       result.destination.name
     )}</span></div>`,
   });
 }
 
 function clusterIcon(cluster: Cluster, active: boolean): L.DivIcon {
-  const temps = cluster.members.map((m) => Math.round(m.avgTempMax));
+  const temps = cluster.members.map((m) => tempValue(m.avgTempMax));
   const min = Math.min(...temps);
   const max = Math.max(...temps);
   const emoji = weatherEmoji(cluster.lead.days[0]?.weatherCode ?? 2);
   const classes = ["sunify-pill", "is-cluster", active ? "is-active" : ""].join(" ");
-  const title = `${cluster.members.length} Orte um ${cluster.lead.destination.name} – klicken zum Hineinzoomen`;
+  const title = tr("{n} Orte um {name} – klicken zum Hineinzoomen", { n: cluster.members.length, name: cluster.lead.destination.name });
   return L.divIcon({
     className: "sunify-marker",
     iconSize: [0, 0],
     iconAnchor: [0, 0],
     html: `<div class="${classes}" title="${escapeHtml(title)}"><span class="count">${
       cluster.members.length
-    }</span><span>Orte</span><span class="sep">|</span><span>${emoji}</span><span>${
-      min === max ? `${max}°C` : `${min}–${max}°C`
-    }</span><span class="sep">|</span><span class="name">um ${escapeHtml(
+    }</span><span>${escapeHtml(tr("Orte"))}</span><span class="sep">|</span><span>${emoji}</span><span>${
+      min === max ? `${max}${tempUnit()}` : `${min}–${max}${tempUnit()}`
+    }</span><span class="sep">|</span><span class="name">${escapeHtml(tr("um"))} ${escapeHtml(
       cluster.lead.destination.name
     )}</span></div>`,
   });
@@ -124,16 +128,17 @@ function dotIcon(result: SearchResult, active: boolean): L.DivIcon {
     iconAnchor: [0, 0],
     html: `<div class="sunify-dot ${active ? "is-active" : ""}" title="${escapeHtml(
       result.destination.name
-    )} – erfüllt die Kriterien nicht"></div>`,
+    )} – ${escapeHtml(tr("erfüllt die Kriterien nicht"))}"></div>`,
   });
 }
 
-const originIcon = L.divIcon({
-  className: "sunify-marker",
-  iconSize: [0, 0],
-  iconAnchor: [0, 0],
-  html: `<div class="sunify-origin" title="Dein Startpunkt"></div>`,
-});
+const originIcon = () =>
+  L.divIcon({
+    className: "sunify-marker",
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+    html: `<div class="sunify-origin" title="${escapeHtml(tr("Dein Startpunkt"))}"></div>`,
+  });
 
 function boundsOf(results: SearchResult[]): L.LatLngBounds {
   return L.latLngBounds(results.map((r) => L.latLng(r.destination.lat, r.destination.lon)));
@@ -212,6 +217,7 @@ export default function MapView({
   onSelect,
   onHover,
 }: MapViewProps) {
+  const { locale, units } = useI18n(); // Pills neu zeichnen, wenn Sprache/Einheiten wechseln
   const [map, setMap] = useState<L.Map | null>(null);
   const [zoom, setZoom] = useState(7);
 
@@ -234,7 +240,7 @@ export default function MapView({
             : clusterIcon(cluster, active),
         };
       }),
-    [clusters, selectedId, highlightId, favorites]
+    [clusters, selectedId, highlightId, favorites, locale, units]
   );
 
   const otherMarkers = useMemo(
@@ -243,7 +249,7 @@ export default function MapView({
         const active = r.destination.id === selectedId;
         return { result: r, active, icon: dotIcon(r, active) };
       }),
-    [others, selectedId]
+    [others, selectedId, locale]
   );
 
   const focus = useMemo(() => {
@@ -289,7 +295,7 @@ export default function MapView({
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         maxZoom={19}
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende'
+        attribution={`&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> ${tr("Mitwirkende")}`}
       />
       <ZoomControl position="bottomright" />
       <MapController
@@ -316,7 +322,7 @@ export default function MapView({
       />
 
       {/* Eigener Standort */}
-      <Marker position={[origin.lat, origin.lon]} icon={originIcon} interactive={false} keyboard={false} />
+      <Marker position={[origin.lat, origin.lon]} icon={originIcon()} interactive={false} keyboard={false} />
 
       {/* Orte im Radius ohne Wetter-Treffer (gedimmt) */}
       {otherMarkers.map(({ result, icon }) => (

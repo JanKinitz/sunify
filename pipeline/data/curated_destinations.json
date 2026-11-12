@@ -1,0 +1,1679 @@
+[
+ {
+  "name": "Tegernsee",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.7123,
+  "lon": 11.758,
+  "population": 3700,
+  "score": 92,
+  "tags": [
+   "lake",
+   "mountains",
+   "wellness",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Garmisch-Partenkirchen",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.4917,
+  "lon": 11.0955,
+  "population": 27500,
+  "score": 91,
+  "tags": [
+   "mountains",
+   "hiking",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Füssen",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.5696,
+  "lon": 10.7004,
+  "population": 15600,
+  "score": 90,
+  "tags": [
+   "historic",
+   "mountains",
+   "lake",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Schwangau",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.577,
+  "lon": 10.737,
+  "population": 3400,
+  "score": 88,
+  "tags": [
+   "historic",
+   "mountains",
+   "lake"
+  ]
+ },
+ {
+  "name": "Berchtesgaden",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.6303,
+  "lon": 13.0019,
+  "population": 7800,
+  "score": 93,
+  "tags": [
+   "mountains",
+   "lake",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Oberstdorf",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.4099,
+  "lon": 10.2797,
+  "population": 9700,
+  "score": 89,
+  "tags": [
+   "mountains",
+   "hiking",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Mittenwald",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.442,
+  "lon": 11.262,
+  "population": 7400,
+  "score": 86,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Oberammergau",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.597,
+  "lon": 11.072,
+  "population": 5400,
+  "score": 84,
+  "tags": [
+   "mountains",
+   "culture",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Bad Reichenhall",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.729,
+  "lon": 12.878,
+  "population": 18000,
+  "score": 82,
+  "tags": [
+   "wellness",
+   "mountains"
+  ]
+ },
+ {
+  "name": "Prien am Chiemsee",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.856,
+  "lon": 12.346,
+  "population": 10700,
+  "score": 85,
+  "tags": [
+   "lake",
+   "culture"
+  ]
+ },
+ {
+  "name": "Schliersee",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.736,
+  "lon": 11.86,
+  "population": 6900,
+  "score": 84,
+  "tags": [
+   "lake",
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Bad Tölz",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.761,
+  "lon": 11.558,
+  "population": 19000,
+  "score": 81,
+  "tags": [
+   "wellness",
+   "historic",
+   "mountains"
+  ]
+ },
+ {
+  "name": "Kochel am See",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.659,
+  "lon": 11.369,
+  "population": 4100,
+  "score": 80,
+  "tags": [
+   "lake",
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Bad Hindelang",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.506,
+  "lon": 10.371,
+  "population": 5200,
+  "score": 83,
+  "tags": [
+   "mountains",
+   "hiking",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Oberstaufen",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.555,
+  "lon": 10.022,
+  "population": 7800,
+  "score": 82,
+  "tags": [
+   "mountains",
+   "wellness",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Lindau",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 47.546,
+  "lon": 9.6843,
+  "population": 25800,
+  "score": 87,
+  "tags": [
+   "lake",
+   "historic"
+  ]
+ },
+ {
+  "name": "Rothenburg ob der Tauber",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 49.3802,
+  "lon": 10.1867,
+  "population": 11400,
+  "score": 89,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Dinkelsbühl",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 49.069,
+  "lon": 10.32,
+  "population": 12000,
+  "score": 84,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Nördlingen",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 48.851,
+  "lon": 10.488,
+  "population": 20500,
+  "score": 78,
+  "tags": [
+   "historic"
+  ]
+ },
+ {
+  "name": "Bamberg",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 49.8988,
+  "lon": 10.9028,
+  "population": 78000,
+  "score": 87,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Würzburg",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 49.7913,
+  "lon": 9.9534,
+  "population": 128000,
+  "score": 84,
+  "tags": [
+   "wine",
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Volkach",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 49.865,
+  "lon": 10.226,
+  "population": 8800,
+  "score": 79,
+  "tags": [
+   "wine",
+   "historic"
+  ]
+ },
+ {
+  "name": "Regensburg",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 49.013,
+  "lon": 12.102,
+  "population": 153000,
+  "score": 86,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Passau",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 48.574,
+  "lon": 13.461,
+  "population": 53000,
+  "score": 83,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Bad Kissingen",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 50.2,
+  "lon": 10.077,
+  "population": 22500,
+  "score": 80,
+  "tags": [
+   "wellness",
+   "historic"
+  ]
+ },
+ {
+  "name": "Bad Füssing",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 48.353,
+  "lon": 13.313,
+  "population": 8000,
+  "score": 76,
+  "tags": [
+   "wellness"
+  ]
+ },
+ {
+  "name": "Bodenmais",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 49.068,
+  "lon": 13.101,
+  "population": 3500,
+  "score": 78,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "München",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 48.1372,
+  "lon": 11.5756,
+  "population": 1488000,
+  "score": 84,
+  "tags": [
+   "culture",
+   "historic"
+  ]
+ },
+ {
+  "name": "Nürnberg",
+  "country": "DE",
+  "region": "Bayern",
+  "lat": 49.4521,
+  "lon": 11.0767,
+  "population": 518000,
+  "score": 80,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Freiburg",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 47.999,
+  "lon": 7.8421,
+  "population": 236000,
+  "score": 86,
+  "tags": [
+   "historic",
+   "wine",
+   "culture"
+  ]
+ },
+ {
+  "name": "Titisee-Neustadt",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 47.902,
+  "lon": 8.2147,
+  "population": 12300,
+  "score": 84,
+  "tags": [
+   "lake",
+   "hiking",
+   "mountains",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Baden-Baden",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 48.7606,
+  "lon": 8.2398,
+  "population": 57000,
+  "score": 85,
+  "tags": [
+   "wellness",
+   "culture",
+   "historic"
+  ]
+ },
+ {
+  "name": "Heidelberg",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 49.3988,
+  "lon": 8.6724,
+  "population": 162000,
+  "score": 90,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Meersburg",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 47.6942,
+  "lon": 9.2706,
+  "population": 6100,
+  "score": 86,
+  "tags": [
+   "lake",
+   "wine",
+   "historic"
+  ]
+ },
+ {
+  "name": "Konstanz",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 47.678,
+  "lon": 9.173,
+  "population": 85000,
+  "score": 85,
+  "tags": [
+   "lake",
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Überlingen",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 47.769,
+  "lon": 9.172,
+  "population": 23000,
+  "score": 82,
+  "tags": [
+   "lake",
+   "historic"
+  ]
+ },
+ {
+  "name": "Friedrichshafen",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 47.654,
+  "lon": 9.479,
+  "population": 62000,
+  "score": 76,
+  "tags": [
+   "lake",
+   "culture"
+  ]
+ },
+ {
+  "name": "Tübingen",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 48.521,
+  "lon": 9.058,
+  "population": 92000,
+  "score": 83,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Triberg",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 48.13,
+  "lon": 8.233,
+  "population": 4700,
+  "score": 80,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Baiersbronn",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 48.506,
+  "lon": 8.371,
+  "population": 15000,
+  "score": 81,
+  "tags": [
+   "mountains",
+   "hiking",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Bad Wildbad",
+  "country": "DE",
+  "region": "Baden-Württemberg",
+  "lat": 48.757,
+  "lon": 8.55,
+  "population": 11000,
+  "score": 77,
+  "tags": [
+   "wellness",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Cochem",
+  "country": "DE",
+  "region": "Rheinland-Pfalz",
+  "lat": 50.1467,
+  "lon": 7.1667,
+  "population": 5300,
+  "score": 88,
+  "tags": [
+   "wine",
+   "historic",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Bernkastel-Kues",
+  "country": "DE",
+  "region": "Rheinland-Pfalz",
+  "lat": 49.916,
+  "lon": 7.076,
+  "population": 7300,
+  "score": 87,
+  "tags": [
+   "wine",
+   "historic"
+  ]
+ },
+ {
+  "name": "Trier",
+  "country": "DE",
+  "region": "Rheinland-Pfalz",
+  "lat": 49.7499,
+  "lon": 6.6371,
+  "population": 111000,
+  "score": 82,
+  "tags": [
+   "historic",
+   "wine",
+   "culture"
+  ]
+ },
+ {
+  "name": "Boppard",
+  "country": "DE",
+  "region": "Rheinland-Pfalz",
+  "lat": 50.231,
+  "lon": 7.588,
+  "population": 15500,
+  "score": 80,
+  "tags": [
+   "wine",
+   "historic",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Bacharach",
+  "country": "DE",
+  "region": "Rheinland-Pfalz",
+  "lat": 50.058,
+  "lon": 7.769,
+  "population": 1900,
+  "score": 82,
+  "tags": [
+   "wine",
+   "historic"
+  ]
+ },
+ {
+  "name": "Sankt Goar",
+  "country": "DE",
+  "region": "Rheinland-Pfalz",
+  "lat": 50.15,
+  "lon": 7.713,
+  "population": 2800,
+  "score": 80,
+  "tags": [
+   "wine",
+   "historic",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Bad Neuenahr-Ahrweiler",
+  "country": "DE",
+  "region": "Rheinland-Pfalz",
+  "lat": 50.544,
+  "lon": 7.113,
+  "population": 28000,
+  "score": 79,
+  "tags": [
+   "wine",
+   "wellness",
+   "historic"
+  ]
+ },
+ {
+  "name": "Speyer",
+  "country": "DE",
+  "region": "Rheinland-Pfalz",
+  "lat": 49.317,
+  "lon": 8.431,
+  "population": 51000,
+  "score": 81,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Neustadt an der Weinstraße",
+  "country": "DE",
+  "region": "Rheinland-Pfalz",
+  "lat": 49.35,
+  "lon": 8.139,
+  "population": 53000,
+  "score": 80,
+  "tags": [
+   "wine",
+   "historic"
+  ]
+ },
+ {
+  "name": "Bad Dürkheim",
+  "country": "DE",
+  "region": "Rheinland-Pfalz",
+  "lat": 49.462,
+  "lon": 8.172,
+  "population": 18500,
+  "score": 79,
+  "tags": [
+   "wine",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Deidesheim",
+  "country": "DE",
+  "region": "Rheinland-Pfalz",
+  "lat": 49.408,
+  "lon": 8.186,
+  "population": 3700,
+  "score": 81,
+  "tags": [
+   "wine",
+   "historic"
+  ]
+ },
+ {
+  "name": "Rüdesheim am Rhein",
+  "country": "DE",
+  "region": "Hessen",
+  "lat": 49.979,
+  "lon": 7.9234,
+  "population": 10000,
+  "score": 85,
+  "tags": [
+   "wine",
+   "historic",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Marburg",
+  "country": "DE",
+  "region": "Hessen",
+  "lat": 50.81,
+  "lon": 8.771,
+  "population": 77000,
+  "score": 79,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Winterberg",
+  "country": "DE",
+  "region": "Nordrhein-Westfalen",
+  "lat": 51.195,
+  "lon": 8.5347,
+  "population": 12600,
+  "score": 78,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Monschau",
+  "country": "DE",
+  "region": "Nordrhein-Westfalen",
+  "lat": 50.555,
+  "lon": 6.24,
+  "population": 11700,
+  "score": 84,
+  "tags": [
+   "historic",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Münster",
+  "country": "DE",
+  "region": "Nordrhein-Westfalen",
+  "lat": 51.962,
+  "lon": 7.626,
+  "population": 317000,
+  "score": 80,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Goslar",
+  "country": "DE",
+  "region": "Niedersachsen",
+  "lat": 51.906,
+  "lon": 10.429,
+  "population": 50000,
+  "score": 82,
+  "tags": [
+   "historic",
+   "hiking",
+   "mountains"
+  ]
+ },
+ {
+  "name": "Bad Harzburg",
+  "country": "DE",
+  "region": "Niedersachsen",
+  "lat": 51.881,
+  "lon": 10.562,
+  "population": 22000,
+  "score": 77,
+  "tags": [
+   "wellness",
+   "hiking",
+   "mountains"
+  ]
+ },
+ {
+  "name": "Celle",
+  "country": "DE",
+  "region": "Niedersachsen",
+  "lat": 52.624,
+  "lon": 10.081,
+  "population": 69000,
+  "score": 78,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Lüneburg",
+  "country": "DE",
+  "region": "Niedersachsen",
+  "lat": 53.25,
+  "lon": 10.414,
+  "population": 77000,
+  "score": 81,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Wernigerode",
+  "country": "DE",
+  "region": "Sachsen-Anhalt",
+  "lat": 51.835,
+  "lon": 10.785,
+  "population": 32000,
+  "score": 84,
+  "tags": [
+   "historic",
+   "hiking",
+   "mountains"
+  ]
+ },
+ {
+  "name": "Quedlinburg",
+  "country": "DE",
+  "region": "Sachsen-Anhalt",
+  "lat": 51.789,
+  "lon": 11.1414,
+  "population": 23500,
+  "score": 83,
+  "tags": [
+   "historic",
+   "culture",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Weimar",
+  "country": "DE",
+  "region": "Thüringen",
+  "lat": 50.98,
+  "lon": 11.329,
+  "population": 65000,
+  "score": 84,
+  "tags": [
+   "culture",
+   "historic"
+  ]
+ },
+ {
+  "name": "Erfurt",
+  "country": "DE",
+  "region": "Thüringen",
+  "lat": 50.978,
+  "lon": 11.029,
+  "population": 214000,
+  "score": 81,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Eisenach",
+  "country": "DE",
+  "region": "Thüringen",
+  "lat": 50.975,
+  "lon": 10.32,
+  "population": 42000,
+  "score": 80,
+  "tags": [
+   "historic",
+   "culture",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Dresden",
+  "country": "DE",
+  "region": "Sachsen",
+  "lat": 51.0504,
+  "lon": 13.7373,
+  "population": 556000,
+  "score": 86,
+  "tags": [
+   "culture",
+   "historic"
+  ]
+ },
+ {
+  "name": "Meißen",
+  "country": "DE",
+  "region": "Sachsen",
+  "lat": 51.163,
+  "lon": 13.474,
+  "population": 28000,
+  "score": 79,
+  "tags": [
+   "historic",
+   "wine",
+   "culture"
+  ]
+ },
+ {
+  "name": "Görlitz",
+  "country": "DE",
+  "region": "Sachsen",
+  "lat": 51.153,
+  "lon": 14.988,
+  "population": 56000,
+  "score": 81,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Bad Schandau",
+  "country": "DE",
+  "region": "Sachsen",
+  "lat": 50.9177,
+  "lon": 14.1547,
+  "population": 3600,
+  "score": 86,
+  "tags": [
+   "mountains",
+   "hiking",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Potsdam",
+  "country": "DE",
+  "region": "Brandenburg",
+  "lat": 52.396,
+  "lon": 13.058,
+  "population": 183000,
+  "score": 85,
+  "tags": [
+   "historic",
+   "culture",
+   "lake"
+  ]
+ },
+ {
+  "name": "Berlin",
+  "country": "DE",
+  "region": "Berlin",
+  "lat": 52.52,
+  "lon": 13.405,
+  "population": 3645000,
+  "score": 82,
+  "tags": [
+   "culture",
+   "historic"
+  ]
+ },
+ {
+  "name": "Lübeck",
+  "country": "DE",
+  "region": "Schleswig-Holstein",
+  "lat": 53.866,
+  "lon": 10.687,
+  "population": 217000,
+  "score": 84,
+  "tags": [
+   "historic",
+   "culture",
+   "coast"
+  ]
+ },
+ {
+  "name": "Timmendorfer Strand",
+  "country": "DE",
+  "region": "Schleswig-Holstein",
+  "lat": 53.995,
+  "lon": 10.782,
+  "population": 9000,
+  "score": 81,
+  "tags": [
+   "coast",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Westerland",
+  "country": "DE",
+  "region": "Schleswig-Holstein",
+  "lat": 54.908,
+  "lon": 8.308,
+  "population": 9000,
+  "score": 88,
+  "tags": [
+   "coast",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Sankt Peter-Ording",
+  "country": "DE",
+  "region": "Schleswig-Holstein",
+  "lat": 54.305,
+  "lon": 8.65,
+  "population": 4000,
+  "score": 85,
+  "tags": [
+   "coast",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Hamburg",
+  "country": "DE",
+  "region": "Hamburg",
+  "lat": 53.5511,
+  "lon": 9.9937,
+  "population": 1841000,
+  "score": 83,
+  "tags": [
+   "culture",
+   "historic"
+  ]
+ },
+ {
+  "name": "Cuxhaven",
+  "country": "DE",
+  "region": "Niedersachsen",
+  "lat": 53.861,
+  "lon": 8.694,
+  "population": 48000,
+  "score": 78,
+  "tags": [
+   "coast"
+  ]
+ },
+ {
+  "name": "Norderney",
+  "country": "DE",
+  "region": "Niedersachsen",
+  "lat": 53.707,
+  "lon": 7.147,
+  "population": 6000,
+  "score": 84,
+  "tags": [
+   "coast",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Stralsund",
+  "country": "DE",
+  "region": "Mecklenburg-Vorpommern",
+  "lat": 54.309,
+  "lon": 13.082,
+  "population": 59000,
+  "score": 82,
+  "tags": [
+   "historic",
+   "coast",
+   "culture"
+  ]
+ },
+ {
+  "name": "Binz",
+  "country": "DE",
+  "region": "Mecklenburg-Vorpommern",
+  "lat": 54.4,
+  "lon": 13.61,
+  "population": 5200,
+  "score": 87,
+  "tags": [
+   "coast",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Kühlungsborn",
+  "country": "DE",
+  "region": "Mecklenburg-Vorpommern",
+  "lat": 54.151,
+  "lon": 11.745,
+  "population": 8000,
+  "score": 83,
+  "tags": [
+   "coast",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Heringsdorf",
+  "country": "DE",
+  "region": "Mecklenburg-Vorpommern",
+  "lat": 53.955,
+  "lon": 14.168,
+  "population": 8500,
+  "score": 84,
+  "tags": [
+   "coast",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Waren",
+  "country": "DE",
+  "region": "Mecklenburg-Vorpommern",
+  "lat": 53.52,
+  "lon": 12.68,
+  "population": 21000,
+  "score": 80,
+  "tags": [
+   "lake",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Salzburg",
+  "country": "AT",
+  "region": "Salzburg",
+  "lat": 47.8095,
+  "lon": 13.055,
+  "population": 157000,
+  "score": 93,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Zell am See",
+  "country": "AT",
+  "region": "Salzburg",
+  "lat": 47.323,
+  "lon": 12.797,
+  "population": 10000,
+  "score": 89,
+  "tags": [
+   "lake",
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Bad Gastein",
+  "country": "AT",
+  "region": "Salzburg",
+  "lat": 47.115,
+  "lon": 13.135,
+  "population": 4000,
+  "score": 83,
+  "tags": [
+   "wellness",
+   "mountains"
+  ]
+ },
+ {
+  "name": "Innsbruck",
+  "country": "AT",
+  "region": "Tirol",
+  "lat": 47.2692,
+  "lon": 11.4041,
+  "population": 131000,
+  "score": 88,
+  "tags": [
+   "mountains",
+   "historic",
+   "culture",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Kitzbühel",
+  "country": "AT",
+  "region": "Tirol",
+  "lat": 47.447,
+  "lon": 12.392,
+  "population": 8300,
+  "score": 88,
+  "tags": [
+   "mountains",
+   "hiking",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Mayrhofen",
+  "country": "AT",
+  "region": "Tirol",
+  "lat": 47.167,
+  "lon": 11.865,
+  "population": 3900,
+  "score": 84,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Seefeld in Tirol",
+  "country": "AT",
+  "region": "Tirol",
+  "lat": 47.33,
+  "lon": 11.188,
+  "population": 3400,
+  "score": 85,
+  "tags": [
+   "mountains",
+   "hiking",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Sölden",
+  "country": "AT",
+  "region": "Tirol",
+  "lat": 46.966,
+  "lon": 11.007,
+  "population": 3100,
+  "score": 82,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Sankt Anton am Arlberg",
+  "country": "AT",
+  "region": "Tirol",
+  "lat": 47.129,
+  "lon": 10.268,
+  "population": 2400,
+  "score": 83,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Lech",
+  "country": "AT",
+  "region": "Vorarlberg",
+  "lat": 47.208,
+  "lon": 10.142,
+  "population": 1600,
+  "score": 84,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Bregenz",
+  "country": "AT",
+  "region": "Vorarlberg",
+  "lat": 47.5031,
+  "lon": 9.7471,
+  "population": 29000,
+  "score": 83,
+  "tags": [
+   "lake",
+   "culture"
+  ]
+ },
+ {
+  "name": "Hallstatt",
+  "country": "AT",
+  "region": "Oberösterreich",
+  "lat": 47.5622,
+  "lon": 13.6493,
+  "population": 750,
+  "score": 94,
+  "tags": [
+   "lake",
+   "historic",
+   "mountains"
+  ]
+ },
+ {
+  "name": "Bad Ischl",
+  "country": "AT",
+  "region": "Oberösterreich",
+  "lat": 47.711,
+  "lon": 13.624,
+  "population": 14000,
+  "score": 84,
+  "tags": [
+   "wellness",
+   "historic",
+   "mountains"
+  ]
+ },
+ {
+  "name": "Gmunden",
+  "country": "AT",
+  "region": "Oberösterreich",
+  "lat": 47.918,
+  "lon": 13.799,
+  "population": 13000,
+  "score": 82,
+  "tags": [
+   "lake",
+   "historic"
+  ]
+ },
+ {
+  "name": "Sankt Wolfgang im Salzkammergut",
+  "country": "AT",
+  "region": "Oberösterreich",
+  "lat": 47.739,
+  "lon": 13.447,
+  "population": 2800,
+  "score": 87,
+  "tags": [
+   "lake",
+   "mountains",
+   "historic"
+  ]
+ },
+ {
+  "name": "Schladming",
+  "country": "AT",
+  "region": "Steiermark",
+  "lat": 47.393,
+  "lon": 13.687,
+  "population": 6700,
+  "score": 82,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Graz",
+  "country": "AT",
+  "region": "Steiermark",
+  "lat": 47.071,
+  "lon": 15.438,
+  "population": 290000,
+  "score": 82,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Velden am Wörther See",
+  "country": "AT",
+  "region": "Kärnten",
+  "lat": 46.613,
+  "lon": 14.042,
+  "population": 9000,
+  "score": 84,
+  "tags": [
+   "lake",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Dürnstein",
+  "country": "AT",
+  "region": "Niederösterreich",
+  "lat": 48.395,
+  "lon": 15.52,
+  "population": 900,
+  "score": 85,
+  "tags": [
+   "wine",
+   "historic"
+  ]
+ },
+ {
+  "name": "Krems an der Donau",
+  "country": "AT",
+  "region": "Niederösterreich",
+  "lat": 48.409,
+  "lon": 15.614,
+  "population": 25000,
+  "score": 80,
+  "tags": [
+   "wine",
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Melk",
+  "country": "AT",
+  "region": "Niederösterreich",
+  "lat": 48.227,
+  "lon": 15.332,
+  "population": 5500,
+  "score": 81,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Wien",
+  "country": "AT",
+  "region": "Wien",
+  "lat": 48.2082,
+  "lon": 16.3738,
+  "population": 1900000,
+  "score": 90,
+  "tags": [
+   "culture",
+   "historic",
+   "wine"
+  ]
+ },
+ {
+  "name": "Luzern",
+  "country": "CH",
+  "region": "Luzern",
+  "lat": 47.0502,
+  "lon": 8.3093,
+  "population": 83000,
+  "score": 92,
+  "tags": [
+   "lake",
+   "historic",
+   "mountains",
+   "culture"
+  ]
+ },
+ {
+  "name": "Lugano",
+  "country": "CH",
+  "region": "Tessin",
+  "lat": 46.0037,
+  "lon": 8.9511,
+  "population": 63000,
+  "score": 90,
+  "tags": [
+   "lake",
+   "culture",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Locarno",
+  "country": "CH",
+  "region": "Tessin",
+  "lat": 46.171,
+  "lon": 8.799,
+  "population": 16000,
+  "score": 87,
+  "tags": [
+   "lake",
+   "culture"
+  ]
+ },
+ {
+  "name": "Ascona",
+  "country": "CH",
+  "region": "Tessin",
+  "lat": 46.157,
+  "lon": 8.773,
+  "population": 5500,
+  "score": 88,
+  "tags": [
+   "lake",
+   "culture"
+  ]
+ },
+ {
+  "name": "Interlaken",
+  "country": "CH",
+  "region": "Bern",
+  "lat": 46.686,
+  "lon": 7.863,
+  "population": 5700,
+  "score": 91,
+  "tags": [
+   "lake",
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Grindelwald",
+  "country": "CH",
+  "region": "Bern",
+  "lat": 46.624,
+  "lon": 8.041,
+  "population": 3800,
+  "score": 92,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Lauterbrunnen",
+  "country": "CH",
+  "region": "Bern",
+  "lat": 46.593,
+  "lon": 7.908,
+  "population": 2400,
+  "score": 90,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Thun",
+  "country": "CH",
+  "region": "Bern",
+  "lat": 46.758,
+  "lon": 7.628,
+  "population": 43000,
+  "score": 84,
+  "tags": [
+   "lake",
+   "historic"
+  ]
+ },
+ {
+  "name": "Bern",
+  "country": "CH",
+  "region": "Bern",
+  "lat": 46.948,
+  "lon": 7.4474,
+  "population": 134000,
+  "score": 86,
+  "tags": [
+   "historic",
+   "culture"
+  ]
+ },
+ {
+  "name": "Zermatt",
+  "country": "CH",
+  "region": "Wallis",
+  "lat": 46.02,
+  "lon": 7.749,
+  "population": 5800,
+  "score": 94,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Sankt Moritz",
+  "country": "CH",
+  "region": "Graubünden",
+  "lat": 46.497,
+  "lon": 9.838,
+  "population": 5000,
+  "score": 90,
+  "tags": [
+   "mountains",
+   "lake",
+   "wellness"
+  ]
+ },
+ {
+  "name": "Davos",
+  "country": "CH",
+  "region": "Graubünden",
+  "lat": 46.803,
+  "lon": 9.836,
+  "population": 10900,
+  "score": 86,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Arosa",
+  "country": "CH",
+  "region": "Graubünden",
+  "lat": 46.778,
+  "lon": 9.673,
+  "population": 3200,
+  "score": 85,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Engelberg",
+  "country": "CH",
+  "region": "Obwalden",
+  "lat": 46.821,
+  "lon": 8.401,
+  "population": 4300,
+  "score": 86,
+  "tags": [
+   "mountains",
+   "hiking"
+  ]
+ },
+ {
+  "name": "Appenzell",
+  "country": "CH",
+  "region": "Appenzell Innerrhoden",
+  "lat": 47.331,
+  "lon": 9.409,
+  "population": 5800,
+  "score": 84,
+  "tags": [
+   "mountains",
+   "hiking",
+   "historic"
+  ]
+ },
+ {
+  "name": "Stein am Rhein",
+  "country": "CH",
+  "region": "Schaffhausen",
+  "lat": 47.659,
+  "lon": 8.859,
+  "population": 3400,
+  "score": 84,
+  "tags": [
+   "historic"
+  ]
+ },
+ {
+  "name": "Montreux",
+  "country": "CH",
+  "region": "Waadt",
+  "lat": 46.433,
+  "lon": 6.911,
+  "population": 26000,
+  "score": 87,
+  "tags": [
+   "lake",
+   "culture",
+   "wine"
+  ]
+ },
+ {
+  "name": "Lausanne",
+  "country": "CH",
+  "region": "Waadt",
+  "lat": 46.52,
+  "lon": 6.633,
+  "population": 140000,
+  "score": 82,
+  "tags": [
+   "lake",
+   "culture"
+  ]
+ },
+ {
+  "name": "Zürich",
+  "country": "CH",
+  "region": "Zürich",
+  "lat": 47.3769,
+  "lon": 8.5417,
+  "population": 420000,
+  "score": 84,
+  "tags": [
+   "culture",
+   "lake",
+   "historic"
+  ]
+ }
+]

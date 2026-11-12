@@ -1,8 +1,7 @@
 "use client";
 
 // Zentrale Client-Komponente: hält den gesamten UI-State (Filter, Sortierung, Auswahl,
-// Favoriten) und verdrahtet die 6 Kern-Screens. Seit Phase 3 kommen die Daten von
-// POST /api/search (eigene Datenbank) statt aus lokalen Mock-Daten.
+// Favoriten) und verdrahtet die Kern-Screens. Die Daten kommen von POST /api/search.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CloudOff, Heart, List, LoaderCircle, Map as MapIcon, Share2, SlidersHorizontal, X } from "lucide-react";
@@ -10,6 +9,9 @@ import { fetchSearch, type SearchData } from "@/lib/api";
 import { formatRange, formatWeekdayRange } from "@/lib/dates";
 import { defaultFilters, filtersFromQuery, filtersToQuery } from "@/lib/filters";
 import { groupResults } from "@/lib/grouping";
+import { fmtDist, formatInt, getLocale, tr, trn } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n-react";
+import { originLabel } from "@/lib/origins";
 import { describeDestination, sortResults } from "@/lib/search";
 import type { Destination, Filters, SearchResult, SortKey } from "@/lib/types";
 import AiSearchBar from "./AiSearchBar";
@@ -19,6 +21,7 @@ import FavoritesDrawer from "./FavoritesDrawer";
 import FilterPanel from "./FilterPanel";
 import MapView, { type MapFocusRequest } from "./MapView";
 import ResultList, { SortSelect } from "./ResultList";
+import { InstallButton, SettingsSwitch } from "./SettingsSwitch";
 
 const FAVORITES_KEY = "sunify:favorites";
 
@@ -53,7 +56,47 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
+/** Quellenangaben der Daten (Lizenzpflicht von Open-Meteo, GeoNames, Wikimedia und OSM). */
+function DataSources({ updatedAt }: { updatedAt: string | null }) {
+  const stamp = updatedAt
+    ? new Date(updatedAt).toLocaleString(getLocale() === "en" ? "en-GB" : "de-DE", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+  const link = "underline decoration-ink-300 underline-offset-2 hover:text-ink-700";
+  return (
+    <p className="mt-4 px-1 text-[10.5px] leading-relaxed text-ink-400">
+      {stamp && <>{tr("Wetterdaten aktualisiert: {time}", { time: stamp })} · </>}
+      {tr("Wetter")}:{" "}
+      <a className={link} href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">
+        Open-Meteo.com
+      </a>{" "}
+      (CC BY 4.0),{" "}
+      <a className={link} href="https://dynamical.org/" target="_blank" rel="noopener noreferrer">
+        NOAA GFS via dynamical.org
+      </a>{" "}
+      · {tr("Orte")}:{" "}
+      <a className={link} href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">
+        GeoNames
+      </a>{" "}
+      (CC BY 4.0),{" "}
+      <a className={link} href="https://www.wikidata.org/" target="_blank" rel="noopener noreferrer">
+        Wikidata
+      </a>{" "}
+      · {tr("Fotos")}:{" "}
+      <a className={link} href="https://commons.wikimedia.org/" target="_blank" rel="noopener noreferrer">
+        Wikimedia Commons
+      </a>{" "}
+      · {tr("Karte")}: © OpenStreetMap {tr("Mitwirkende")}
+    </p>
+  );
+}
+
 export default function SunifyApp() {
+  const { locale, units } = useI18n();
   const [filters, setFilters] = useState<Filters>(() => filtersFromQuery(window.location.search));
   const [sort, setSort] = useState<SortKey>("score");
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -104,7 +147,8 @@ export default function SunifyApp() {
     }
   }, [favorites]);
 
-  // Suche bei jeder Filteränderung neu ausführen (kurz verzögert, damit Slider flüssig bleiben)
+  // Suche bei jeder Filter- oder Sprachänderung neu ausführen (kurz verzögert, damit Slider flüssig bleiben).
+  // Bei einem Sprachwechsel kommen so Ortsnamen und Regionen in der neuen Sprache.
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -118,7 +162,7 @@ export default function SunifyApp() {
         })
         .catch((cause: unknown) => {
           if (controller.signal.aborted) return;
-          setError(cause instanceof Error ? cause.message : "Die Suche ist gerade nicht verfügbar.");
+          setError(cause instanceof Error ? cause.message : tr("Die Suche ist gerade nicht verfügbar."));
           setLoading(false);
         });
     }, 250);
@@ -126,20 +170,27 @@ export default function SunifyApp() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [filters]);
+  }, [filters, locale]);
 
   // Liste, Detail und Merkliste beziehen sich auf die Filter der zuletzt geladenen Antwort;
   // Radius-Kreis und Startpunkt der Karte folgen den Reglern sofort.
-  const activeFilters = data?.filters ?? filters;
+  const rawActive = data?.filters ?? filters;
+  const activeFilters = useMemo(
+    () => ({ ...rawActive, origin: { ...rawActive.origin, name: originLabel(rawActive.origin, tr) } }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rawActive, locale]
+  );
 
   const results = useMemo(() => {
     if (!data) return [] as SearchResult[];
     const list = data.matchIds
       .map((id) => knownRef.current.get(id))
       .filter((d): d is Destination => d !== undefined)
-      .map((d) => describeDestination(d, data.filters));
+      .map((d) => describeDestination(d, data.filters, data.matchInfo[d.id]));
     return sortResults(list, sort);
-  }, [data, sort]);
+    // Einheitenwechsel: Fahrzeit-/Distanztexte werden in den Komponenten neu formatiert
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, sort, units]);
 
   const others = useMemo(() => {
     if (!data) return [] as SearchResult[];
@@ -150,6 +201,7 @@ export default function SunifyApp() {
   }, [data]);
 
   const groupCount = useMemo(() => groupResults(results).length, [results]);
+  const strictCount = useMemo(() => results.filter((r) => r.strict !== false).length, [results]);
 
   // Aus der Liste: Ortsgruppe auf der Karte zeigen (mobil dazu die Liste einklappen)
   const showOnMap = useCallback((ids: number[]) => {
@@ -164,9 +216,10 @@ export default function SunifyApp() {
     if (selectedId === null) return null;
     const destination = knownRef.current.get(selectedId);
     if (!destination) return null;
+    const info = data?.matchInfo[selectedId];
     return {
-      result: describeDestination(destination, activeFilters),
-      match: data?.matchIds.includes(selectedId) ?? false,
+      result: describeDestination(destination, activeFilters, info),
+      match: info !== undefined,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, data]);
@@ -182,35 +235,33 @@ export default function SunifyApp() {
 
   const toggleFavorite = useCallback(
     (id: number) => {
-      const name = knownRef.current.get(id)?.name ?? "Ort";
+      const name = knownRef.current.get(id)?.name ?? tr("Ort");
       setFavorites((prev) => {
         const exists = prev.includes(id);
         return exists ? prev.filter((v) => v !== id) : [...prev, id];
       });
-      notify(favorites.includes(id) ? `${name} von der Merkliste entfernt` : `${name} gemerkt ♥`);
+      notify(
+        favorites.includes(id)
+          ? tr("{name} von der Merkliste entfernt", { name })
+          : tr("{name} gemerkt ♥", { name })
+      );
     },
     [favorites, notify]
   );
 
-  // Geteilte Links zeigen immer auf die öffentliche Hauptadresse. Die langen, automatisch erzeugten
-  // Vercel-Adressen einzelner Veröffentlichungen sind per Deployment Protection geschützt und
-  // verlangen eine Vercel-Anmeldung. Vercel setzt die Variable beim Build automatisch.
-  const productionHost = process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL;
-  const shareOrigin =
-    productionHost && window.location.hostname.endsWith(".vercel.app")
-      ? `https://${productionHost}`
-      : window.location.origin;
-  const shareUrl = `${shareOrigin}${window.location.pathname}?${query}`;
+  // Geteilte Links zeigen auf die aktuelle Adresse; die Sprache wird mitgegeben,
+  // der Empfänger kann sie mit einem Klick umstellen.
+  const shareUrl = `${window.location.origin}${window.location.pathname}?${query}&lang=${locale}`;
   const share = useCallback(async () => {
     const ok = await copyToClipboard(shareUrl);
-    notify(ok ? "Link kopiert – ab damit in die WhatsApp-Gruppe! 🔗" : "Link steht in der Adresszeile bereit.");
+    notify(ok ? tr("Link kopiert – ab damit in die WhatsApp-Gruppe! 🔗") : tr("Link steht in der Adresszeile bereit."));
   }, [shareUrl, notify]);
 
   const closeDetail = useCallback(() => setSelectedId(null), []);
   const closeFavorites = useCallback(() => setShowFavorites(false), []);
 
   const rangeLabel = formatWeekdayRange(activeFilters.startDate, activeFilters.endDate);
-  const countLabel = `${results.length} Treffer`;
+  const countLabel = trn(results.length, "1 Treffer", "{n} Treffer");
   const initialLoading = loading && !data;
 
   const listHeader = (
@@ -219,18 +270,24 @@ export default function SunifyApp() {
         <h2 className="flex items-center gap-2 truncate text-[15px] font-bold text-ink-900">
           <span className="truncate">
             {initialLoading
-              ? "Suche läuft …"
+              ? tr("Suche läuft …")
               : results.length === 0
-                ? "Keine Treffer"
-                : `${results.length} ${results.length === 1 ? "Ort" : "Orte"} mit Wunschwetter`}
+                ? tr("Keine Treffer")
+                : strictCount === results.length
+                  ? trn(results.length, "{n} Ort mit Wunschwetter", "{n} Orte mit Wunschwetter")
+                  : tr("{strict} Treffer, {near} Fast-Treffer", {
+                      strict: formatInt(strictCount),
+                      near: formatInt(results.length - strictCount),
+                    })}
           </span>
           {loading && <LoaderCircle className="h-3.5 w-3.5 shrink-0 animate-spin text-sun-500" />}
         </h2>
         <p className="truncate text-xs text-ink-500">
-          {formatRange(activeFilters.startDate, activeFilters.endDate)} · {activeFilters.radiusKm} km um{" "}
-          {activeFilters.origin.name}
-          {groupCount > 0 && groupCount < results.length && ` · ${groupCount} ${groupCount === 1 ? "Region" : "Regionen"}`}
-          {totalMatches > results.length && ` · Top ${results.length} von ${totalMatches.toLocaleString("de-DE")}`}
+          {formatRange(activeFilters.startDate, activeFilters.endDate)} ·{" "}
+          {tr("{dist} um {origin}", { dist: fmtDist(activeFilters.radiusKm), origin: activeFilters.origin.name })}
+          {groupCount > 0 && groupCount < results.length && ` · ${trn(groupCount, "{n} Region", "{n} Regionen")}`}
+          {totalMatches > results.length &&
+            ` · ${tr("Top {n} von {total}", { n: results.length, total: formatInt(totalMatches) })}`}
         </p>
       </div>
       {results.length > 0 && <SortSelect sort={sort} onSort={setSort} />}
@@ -248,37 +305,42 @@ export default function SunifyApp() {
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-500">
         <CloudOff className="h-7 w-7" />
       </div>
-      <h3 className="mt-3 text-lg font-bold text-ink-900">Suche nicht erreichbar</h3>
+      <h3 className="mt-3 text-lg font-bold text-ink-900">{tr("Suche nicht erreichbar")}</h3>
       <p className="mx-auto mt-1 max-w-sm text-sm text-ink-600">{error}</p>
       <button
         type="button"
         onClick={() => setFilters((prev) => ({ ...prev }))}
         className="mt-4 rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sun-600"
       >
-        Erneut versuchen
+        {tr("Erneut versuchen")}
       </button>
     </div>
-  ) : results.length === 0 ? (
-      <EmptyState filters={activeFilters} relaxations={relaxations} onApply={update} onReset={reset} />
-    ) : (
-      <ResultList
-        results={results}
-        filters={activeFilters}
-        highlightId={mapHoverId}
-        favorites={favorites}
-        onSelect={setSelectedId}
-        onHover={setListHoverId}
-        onToggleFavorite={toggleFavorite}
-        onShowOnMap={showOnMap}
-      />
-    );
+  ) : (
+    <>
+      {results.length === 0 ? (
+        <EmptyState filters={activeFilters} relaxations={relaxations} onApply={update} onReset={reset} />
+      ) : (
+        <ResultList
+          results={results}
+          filters={activeFilters}
+          highlightId={mapHoverId}
+          favorites={favorites}
+          onSelect={setSelectedId}
+          onHover={setListHoverId}
+          onToggleFavorite={toggleFavorite}
+          onShowOnMap={showOnMap}
+        />
+      )}
+      <DataSources updatedAt={data?.weatherUpdatedAt ?? null} />
+    </>
+  );
 
   return (
     <div className="flex h-dvh flex-col overflow-clip bg-ink-50 text-ink-900">
       {/* ------------------------------------------------------------------ */}
-      {/* Top-Bar: Logo, KI-Smart-Prompt-Leiste, Teilen & Merkliste          */}
+      {/* Top-Bar: Logo, Freitext-Suche, Sprache/Einheiten, Teilen & Merkliste */}
       {/* ------------------------------------------------------------------ */}
-      <header className="relative z-30 shrink-0 bg-ink-900 px-3 pb-2.5 pt-3 text-white shadow-lift sm:px-5">
+      <header className="relative z-30 shrink-0 bg-ink-900 px-3 pb-2.5 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-lift sm:px-5">
         <div className="flex flex-wrap items-start gap-x-4 gap-y-2.5 lg:flex-nowrap">
           <div className="flex h-10 shrink-0 items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sun-300 to-sun-600 text-xl shadow-soft">
@@ -286,7 +348,7 @@ export default function SunifyApp() {
             </span>
             <div className="leading-tight">
               <div className="text-lg font-extrabold tracking-tight">Sunify</div>
-              <div className="hidden text-[11px] text-ink-300 sm:block">Finde dein Wunschwetter</div>
+              <div className="hidden text-[11px] text-ink-300 sm:block">{tr("Finde dein Wunschwetter")}</div>
             </div>
           </div>
 
@@ -295,23 +357,27 @@ export default function SunifyApp() {
           </div>
 
           <div className="order-2 ml-auto flex h-10 shrink-0 items-center gap-2 lg:order-3">
+            <div className="hidden sm:block">
+              <SettingsSwitch />
+            </div>
+            <InstallButton />
             <button
               type="button"
               onClick={share}
-              title="Suchergebnis teilen"
+              title={tr("Suchergebnis teilen")}
               className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-medium ring-1 ring-white/10 transition hover:bg-white/20"
             >
               <Share2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Suche teilen</span>
+              <span className="hidden xl:inline">{tr("Suche teilen")}</span>
             </button>
             <button
               type="button"
               onClick={() => setShowFavorites(true)}
-              title="Merkliste öffnen"
+              title={tr("Merkliste öffnen")}
               className="relative flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-medium ring-1 ring-white/10 transition hover:bg-white/20"
             >
               <Heart className={`h-4 w-4 ${favorites.length > 0 ? "fill-rose-400 text-rose-400" : ""}`} />
-              <span className="hidden sm:inline">Merkliste</span>
+              <span className="hidden xl:inline">{tr("Merkliste")}</span>
               {favorites.length > 0 && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-bold">
                   {favorites.length}
@@ -358,15 +424,21 @@ export default function SunifyApp() {
               <div className="font-bold text-ink-900">
                 {countLabel} · {rangeLabel}
               </div>
-              <div className="mt-1 flex items-center gap-3 text-[11px] text-ink-500">
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-500">
                 <span className="flex items-center gap-1">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-sun-500" /> Start
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-sun-500" /> {tr("Start")}
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="inline-block h-2.5 w-4 rounded-full border border-ink-200 bg-white shadow-sm" /> Treffer
+                  <span className="inline-block h-2.5 w-4 rounded-full border border-ink-200 bg-white shadow-sm" /> {tr("Treffer")}
                 </span>
+                {strictCount < results.length && (
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block h-2.5 w-4 rounded-full border border-dashed border-amber-400 bg-amber-50" />{" "}
+                    {tr("knapp")}
+                  </span>
+                )}
                 <span className="flex items-center gap-1">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-ink-300" /> passt nicht
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-ink-300" /> {tr("passt nicht")}
                 </span>
               </div>
             </div>
@@ -378,7 +450,7 @@ export default function SunifyApp() {
             onClick={() => setMobileFilters(true)}
             className="absolute right-3 top-3 z-[1000] flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-ink-900 shadow-lift lg:hidden"
           >
-            <SlidersHorizontal className="h-4 w-4 text-sun-600" /> Filter
+            <SlidersHorizontal className="h-4 w-4 text-sun-600" /> {tr("Filter")}
           </button>
 
           {/* Mobile: schwebender Toggle-Button */}
@@ -386,9 +458,9 @@ export default function SunifyApp() {
             <button
               type="button"
               onClick={() => setSheetOpen(true)}
-              className="absolute bottom-6 left-1/2 z-[1000] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-lift transition active:scale-95 lg:hidden"
+              className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[1000] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-lift transition active:scale-95 lg:hidden"
             >
-              <List className="h-4 w-4" /> Liste anzeigen ({countLabel})
+              <List className="h-4 w-4" /> {tr("Liste anzeigen ({count})", { count: countLabel })}
             </button>
           )}
         </section>
@@ -412,7 +484,7 @@ export default function SunifyApp() {
           <button
             type="button"
             onClick={() => setSheetOpen(false)}
-            aria-label="Liste einklappen"
+            aria-label={tr("Liste einklappen")}
             className="flex shrink-0 justify-center pb-1 pt-2.5"
           >
             <span className="h-1.5 w-12 rounded-full bg-ink-200" />
@@ -422,27 +494,32 @@ export default function SunifyApp() {
           <button
             type="button"
             onClick={() => setSheetOpen(false)}
-            className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-lift active:scale-95"
+            className="absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-lift active:scale-95"
           >
-            <MapIcon className="h-4 w-4" /> Karte anzeigen
+            <MapIcon className="h-4 w-4" /> {tr("Karte anzeigen")}
           </button>
         </div>
 
         {/* Mobile: Filter-Cockpit als Vollbild-Sheet */}
         {mobileFilters && (
           <div className="absolute inset-0 z-30 flex animate-slide-in-up flex-col bg-ink-50 lg:hidden">
-            <div className="flex shrink-0 items-center justify-between border-b border-ink-100 bg-white px-4 py-3">
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-ink-100 bg-white px-4 py-3">
               <h2 className="flex items-center gap-2 text-base font-bold">
-                <SlidersHorizontal className="h-4 w-4 text-sun-600" /> Such- & Filter-Cockpit
+                <SlidersHorizontal className="h-4 w-4 text-sun-600" /> {tr("Such- & Filter-Cockpit")}
               </h2>
               <button
                 type="button"
                 onClick={() => setMobileFilters(false)}
-                aria-label="Filter schließen"
+                aria-label={tr("Filter schließen")}
                 className="rounded-full p-2 text-ink-500 hover:bg-ink-100"
               >
                 <X className="h-5 w-5" />
               </button>
+            </div>
+            {/* Sprache & Einheiten (auf dem Handy nicht in der Top-Bar) */}
+            <div className="flex shrink-0 items-center justify-between gap-2 bg-ink-900 px-4 py-2 text-xs text-ink-200 sm:hidden">
+              <span>{tr("Sprache & Einheiten")}</span>
+              <SettingsSwitch />
             </div>
             <div className="thin-scroll flex-1 overflow-y-auto">
               <FilterPanel
@@ -453,24 +530,27 @@ export default function SunifyApp() {
                 onNotify={notify}
               />
             </div>
-            <div className="shrink-0 border-t border-ink-100 bg-white p-3">
+            <div className="shrink-0 border-t border-ink-100 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <button
                 type="button"
                 onClick={() => setMobileFilters(false)}
                 className="w-full rounded-xl bg-sun-500 px-4 py-3 text-sm font-bold text-white shadow-soft transition hover:bg-sun-600"
               >
-                {results.length === 0 ? "Keine Treffer – Vorschläge ansehen" : `${countLabel} auf der Karte anzeigen`}
+                {results.length === 0
+                  ? tr("Keine Treffer – Vorschläge ansehen")
+                  : tr("{count} auf der Karte anzeigen", { count: countLabel })}
               </button>
             </div>
           </div>
         )}
       </main>
 
-      {/* Screen 6: Merkliste */}
+      {/* Merkliste */}
       {showFavorites && (
         <FavoritesDrawer
           favorites={favoriteDestinations}
           filters={activeFilters}
+          matchInfo={data?.matchInfo ?? {}}
           shareUrl={shareUrl}
           onSelect={setSelectedId}
           onRemove={toggleFavorite}
@@ -479,7 +559,7 @@ export default function SunifyApp() {
         />
       )}
 
-      {/* Screen 4: Orts-Detailansicht */}
+      {/* Orts-Detailansicht */}
       {selected && (
         <DetailDrawer
           result={selected.result}

@@ -1,23 +1,15 @@
 {
   "name": "sunify",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Sunify – Wetter-Rückwärtssuche",
+  "description": "Sunify 2.0 – weltweite Wetter-Rückwärtssuche",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed": "tsx scripts/seed-grid-and-cities.ts",
-    "db:check": "tsx scripts/check-db.ts",
-    "db:setup": "npm run db:migrate && npm run db:seed && npm run db:check",
-    "weather:sync": "tsx scripts/sync-weather.ts",
-    "weather:secret": "tsx scripts/ensure-cron-secret.ts",
-    "deploy:env": "tsx scripts/vercel-env.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "fflate": "^0.8.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
     "next": "^15.3.0",
@@ -35,7 +27,6 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
-    "tsx": "^4.19.0",
     "typescript": "^5.7.2"
   }
 }

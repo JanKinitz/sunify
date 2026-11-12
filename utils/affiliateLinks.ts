@@ -2,6 +2,7 @@
 // Reine URL-Konstruktion (kein API-Call) – daher bereits in Phase 0 mit echter Logik aktiv.
 
 import { addDays, diffDays } from "@/lib/dates";
+import { getLocale } from "@/lib/i18n";
 
 export interface AffiliateLinkParams {
   cityName: string;
@@ -32,7 +33,8 @@ export function generateAccommodationLink(
   const adults = params.adults || 2;
 
   // Ziel-URL mit vorausgefülltem Ort, Koordinaten und Zeitraum
-  const baseUrl = "https://www.booking.com/searchresults.de.html";
+  // Sprache der Booking-Seite folgt der App-Sprache
+  const baseUrl = `https://www.booking.com/searchresults.${getLocale() === "en" ? "en-gb" : "de"}.html`;
   const queryParams = new URLSearchParams({
     ss: `${params.cityName}`,
     checkin,
@@ -51,7 +53,7 @@ export function generateAccommodationLink(
 export function generateCampingLink(cityName: string): string {
   const q = new URLSearchParams({
     api: "1",
-    query: `Campingplatz Wohnmobilstellplatz ${cityName}`,
+    query: getLocale() === "en" ? `campsite motorhome parking ${cityName}` : `Campingplatz Wohnmobilstellplatz ${cityName}`,
   });
   return `https://www.google.com/maps/search/?${q.toString()}`;
 }
@@ -65,6 +67,7 @@ export function generateGoogleMapsRoute(
     origin: `${from.lat},${from.lon}`,
     destination: `${to.lat},${to.lon}`,
     travelmode: "driving",
+    hl: getLocale(),
   });
   return `https://www.google.com/maps/dir/?${q.toString()}`;
 }

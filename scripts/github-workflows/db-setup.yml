@@ -1,0 +1,46 @@
+# Richtet die Datenbank von Sunify 2.0 ein: Schema, Orte und Raster weltweit, danach erste Wetterdaten.
+# Start: GitHub → Actions → "Datenbank einrichten" → "Run workflow" (oder run-db-setup.bat)
+name: Datenbank einrichten
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: weather
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+      - name: Python-Pakete installieren
+        run: pip install -r pipeline/requirements.txt
+      - name: Schema anlegen
+        run: python -m pipeline migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Orte und Raster weltweit aufbauen
+        run: python -m pipeline seed
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Wetter Zentraleuropa (Open-Meteo)
+        run: python -m pipeline weather-om
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
+      - name: Wetter weltweit (GFS)
+        run: python -m pipeline weather-gfs
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Stand
+        if: always()
+        run: python -m pipeline status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

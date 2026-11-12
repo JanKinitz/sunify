@@ -1,20 +1,19 @@
 // Datums-Helfer. Alle Daten werden als lokale YYYY-MM-DD-Strings geführt,
 // um Zeitzonen-Verschiebungen (UTC vs. Europe/Berlin) zu vermeiden.
 
+import { getLocale } from "./i18n";
 import type { DatePreset } from "./types";
 
-export const FORECAST_DAYS = 14;
+export const FORECAST_DAYS = 16;
 
-const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-const WEEKDAYS_LONG = [
-  "Sonntag",
-  "Montag",
-  "Dienstag",
-  "Mittwoch",
-  "Donnerstag",
-  "Freitag",
-  "Samstag",
-];
+const WEEKDAYS: Record<string, string[]> = {
+  de: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+  en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+};
+const WEEKDAYS_LONG: Record<string, string[]> = {
+  de: ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
+  en: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+};
 
 export function toISO(d: Date): string {
   const y = d.getFullYear();
@@ -89,16 +88,19 @@ export function rangeForPreset(preset: Exclude<DatePreset, "custom">): {
 }
 
 export function weekdayShort(iso: string): string {
-  return WEEKDAYS[parseISO(iso).getDay()];
+  return WEEKDAYS[getLocale()][parseISO(iso).getDay()];
 }
 
 export function weekdayLong(iso: string): string {
-  return WEEKDAYS_LONG[parseISO(iso).getDay()];
+  return WEEKDAYS_LONG[getLocale()][parseISO(iso).getDay()];
 }
 
 /** "17.05." */
 export function formatDayMonth(iso: string): string {
   const d = parseISO(iso);
+  if (getLocale() === "en") {
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); // "14 Nov"
+  }
   return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
 }
 

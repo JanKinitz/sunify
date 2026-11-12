@@ -149,6 +149,12 @@ body {
 .sunify-pill.is-cluster.is-active {
   background: #141b2d;
 }
+/* Fast-Treffer (im Toleranzbereich): gestrichelter, gelber Rand */
+.sunify-pill.is-near {
+  border-style: dashed;
+  border-color: #f5b301;
+  background: #fffbea;
+}
 .sunify-pill.is-fav::after {
   content: "♥";
   color: #e5484d;

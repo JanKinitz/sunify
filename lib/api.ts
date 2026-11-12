@@ -1,7 +1,6 @@
-// Client-Anbindung an POST /api/search (Phase 3).
-// Wandelt die API-Antwort in die UI-Typen aus Phase 0 um, sodass alle Komponenten
-// (Karte, Liste, Detail-Drawer, Merkliste, Empty State) unverändert weiterarbeiten.
+// Client-Anbindung an POST /api/search. Wandelt die API-Antwort in die UI-Typen um.
 
+import { getLocale, tr, trn } from "./i18n";
 import type { Relaxation } from "./search";
 import { maxPrecipFor } from "./search";
 import type { DailyForecast, Destination, Filters, TagKey } from "./types";
@@ -12,14 +11,21 @@ export const RESULT_LIMIT = 100;
 interface ApiDestination {
   id: number;
   name: string;
+  nameDe: string | null;
+  nameEn: string | null;
   countryCode: string;
   adminRegion: string | null;
+  adminRegionDe: string | null;
+  adminRegionEn: string | null;
   lat: number;
   lon: number;
+  elevation: number | null;
   population: number;
   tourismScore: number;
   tags: string[];
   gridId: number;
+  tempCorrection: number;
+  image: { file: string; author: string; license: string } | null;
 }
 
 interface ApiDaily {
@@ -34,7 +40,7 @@ interface ApiDaily {
 }
 
 interface ApiResponse {
-  matchIds: number[];
+  matches: { id: number; pct: number; strict: boolean }[];
   totalMatches: number;
   otherIds: number[];
   destinations: ApiDestination[];
@@ -47,6 +53,7 @@ export interface SearchData {
   /** Die Filter, mit denen diese Antwort berechnet wurde */
   filters: Filters;
   matchIds: number[];
+  matchInfo: Record<number, { pct: number; strict: boolean }>;
   totalMatches: number;
   otherIds: number[];
   destinations: Destination[];
@@ -89,27 +96,37 @@ const TAG_EMOJI: Record<TagKey, string> = {
   wellness: "♨️",
 };
 
-const COUNTRY: Record<string, string> = { DE: "Deutschland", AT: "Österreich", CH: "Schweiz" };
+export function countryName(code: string): string {
+  try {
+    return new Intl.DisplayNames([getLocale()], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
 
 function teaserFor(tags: TagKey[], region: string, population: number): string {
   if (tags.length === 0) {
     return population > 0
-      ? `Ort in ${region} · ${population.toLocaleString("de-DE")} Einwohner`
-      : `Ort in ${region}`;
+      ? trn(population, "Ort in {region} · 1 Einwohner", "Ort in {region} · {n} Einwohner", { region })
+      : tr("Ort in {region}", { region });
   }
-  const phrases = tags.slice(0, 3).map((t) => TAG_PHRASE[t]);
-  const text =
-    phrases.length === 1 ? phrases[0] : `${phrases.slice(0, -1).join(", ")} und ${phrases[phrases.length - 1]}`;
+  const phrases = tags.slice(0, 3).map((t) => tr(TAG_PHRASE[t]));
+  const and = tr("und");
+  const text = phrases.length === 1 ? phrases[0] : `${phrases.slice(0, -1).join(", ")} ${and} ${phrases[phrases.length - 1]}`;
   return `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 }
 
 function toDestination(api: ApiDestination, days: ApiDaily[]): Destination {
+  const en = getLocale() === "en";
   const tags = api.tags.filter((t): t is TagKey => (KNOWN_TAGS as string[]).includes(t));
-  const region = api.adminRegion ?? COUNTRY[api.countryCode] ?? api.countryCode;
+  const name = (en ? api.nameEn : api.nameDe) ?? api.name;
+  const region =
+    (en ? api.adminRegionEn : api.adminRegionDe) ?? api.adminRegion ?? countryName(api.countryCode);
+  const corr = api.tempCorrection || 0;
   const forecasts: DailyForecast[] = days.map((d) => ({
     date: d.date,
-    tempMax: d.tempMax,
-    tempMin: d.tempMin,
+    tempMax: Math.round((d.tempMax + corr) * 10) / 10,
+    tempMin: Math.round((d.tempMin + corr) * 10) / 10,
     precip: d.precip,
     precipProb: d.precipProb,
     wind: Math.round(d.wind),
@@ -118,18 +135,21 @@ function toDestination(api: ApiDestination, days: ApiDaily[]): Destination {
   }));
   return {
     id: api.id,
-    name: api.name,
-    countryCode: api.countryCode as Destination["countryCode"],
+    name,
+    countryCode: api.countryCode,
     adminRegion: region,
     area: region,
     lat: api.lat,
     lon: api.lon,
+    elevation: api.elevation,
     population: api.population,
     tourismScore: api.tourismScore,
     tags,
-    hashtags: tags.slice(0, 3).map((t) => TAG_LABEL[t]),
+    hashtags: tags.slice(0, 3).map((t) => tr(TAG_LABEL[t])),
     teaser: teaserFor(tags, region, api.population),
     emoji: tags.length > 0 ? TAG_EMOJI[tags[0]] : "📍",
+    image: api.image,
+    tempCorrection: corr,
     forecasts,
     gridId: api.gridId,
   };
@@ -137,11 +157,7 @@ function toDestination(api: ApiDestination, days: ApiDaily[]): Destination {
 
 export class SearchError extends Error {}
 
-export async function fetchSearch(
-  filters: Filters,
-  favoriteIds: number[],
-  signal?: AbortSignal
-): Promise<SearchData> {
+export async function fetchSearch(filters: Filters, favoriteIds: number[], signal?: AbortSignal): Promise<SearchData> {
   const maxPrecip = maxPrecipFor(filters.precipMode);
   let response: Response;
   try {
@@ -161,6 +177,7 @@ export async function fetchSearch(
           maxWindSpeed: filters.maxWind,
           minSunshineHours: filters.minSun,
         },
+        tolerance: filters.tolerance,
         category: filters.category,
         limit: RESULT_LIMIT,
         favoriteIds,
@@ -168,19 +185,19 @@ export async function fetchSearch(
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
-    throw new SearchError("Der Server ist nicht erreichbar.");
+    throw new SearchError(tr("Der Server ist nicht erreichbar."));
   }
 
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok || payload === null) {
-    const message = (payload as { error?: string } | null)?.error;
-    throw new SearchError(message ?? "Die Suche ist gerade nicht verfügbar.");
+    throw new SearchError(tr("Die Suche ist gerade nicht verfügbar."));
   }
   const api = payload as ApiResponse;
 
   return {
     filters,
-    matchIds: api.matchIds,
+    matchIds: api.matches.map((m) => m.id),
+    matchInfo: Object.fromEntries(api.matches.map((m) => [m.id, { pct: m.pct, strict: m.strict }])),
     totalMatches: api.totalMatches,
     otherIds: api.otherIds,
     destinations: api.destinations.map((d) => toDestination(d, api.forecasts[String(d.gridId)] ?? [])),

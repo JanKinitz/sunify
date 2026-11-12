@@ -1,12 +1,15 @@
-// Phase 3 · Rückwärtssuche auf der eigenen Datenbank (Kapitel 7 der Spezifikation).
-// Validiert die Filter, ruft die PostGIS-Funktion search_weather_destinations auf und liefert
-// zusätzlich alles, was das in Phase 0 abgenommene UI braucht: Nicht-Treffer für die Karte,
-// 14-Tage-Prognosen je Rasterpunkt (Detail-Timeline), Merklisten-Orte und "Fast-Treffer".
-// Es findet KEIN externer Wetter-API-Call statt.
+// Sunify 2.0 · Rückwärtssuche auf der eigenen Datenbank.
+// Validiert die Filter, ruft search_destinations_v2 auf (Toleranzstufen, Höhenkorrektur) und liefert
+// zusätzlich, was die Oberfläche braucht: Stammdaten, Tageswerte je Rasterpunkt, gedimmte Nicht-Treffer
+// für die Karte und "Fast-Treffer"-Vorschläge. Es findet KEIN externer Wetter-API-Call statt.
 
-import { CATEGORY_TAGS } from "@/lib/search";
-import type { Category, PrecipMode } from "@/lib/types";
-import type { Queryable } from "./weatherSync";
+import { CATEGORIES, CATEGORY_TAGS } from "@/lib/categories";
+import type { Relaxation } from "@/lib/search";
+import type { Category, PrecipMode, Tolerance } from "@/lib/types";
+
+export interface Queryable {
+  query(text: string, params?: unknown[]): Promise<{ rows: any[]; rowCount: number | null }>;
+}
 
 export interface SearchRequest {
   originLat: number;
@@ -19,68 +22,17 @@ export interface SearchRequest {
   maxPrecip: number | null;
   maxWind: number;
   minSun: number;
+  tolerance: Tolerance;
   category: Category;
   limit: number;
   favoriteIds: number[];
 }
 
-export interface ApiDestination {
-  id: number;
-  name: string;
-  countryCode: string;
-  adminRegion: string | null;
-  lat: number;
-  lon: number;
-  population: number;
-  tourismScore: number;
-  tags: string[];
-  gridId: number;
-}
-
-export interface ApiDaily {
-  date: string;
-  tempMax: number;
-  tempMin: number;
-  precip: number;
-  precipProb: number | null;
-  wind: number;
-  sunshine: number | null;
-  weatherCode: number;
-}
-
-export interface ApiRelaxation {
-  id: string;
-  label: string;
-  hint: string;
-  count: number;
-  patch: {
-    radiusKm?: number;
-    minTemp?: number;
-    precipMode?: PrecipMode;
-    minSun?: number;
-    maxWind?: number;
-    category?: Category;
-  };
-}
-
-export interface SearchResponse {
-  matchIds: number[];
-  totalMatches: number;
-  otherIds: number[];
-  destinations: ApiDestination[];
-  forecasts: Record<string, ApiDaily[]>;
-  relaxations: ApiRelaxation[];
-  meta: { tookMs: number; weatherUpdatedAt: string | null };
-}
-
 const RADIUS_MIN = 10;
 const RADIUS_MAX = 500;
 const LIMIT_MAX = 100;
-const NO_LIMIT = 100000;
-const ANY_PRECIP = 100000;
 const OTHERS_LIMIT = 40;
-const OTHERS_MIN_SCORE = 72; // nur bekannte Ausflugsziele als gedimmte Punkte zeigen
-const CATEGORIES: Category[] = ["all", "mountains", "water", "historic", "wine"];
+const OTHERS_MIN_SCORE = 50;
 
 // ---------------------------------------------------------------------------
 // Validierung
@@ -97,9 +49,7 @@ function num(value: unknown, min: number, max: number): number | null {
   return value;
 }
 
-export function parseSearchRequest(
-  body: unknown
-): { ok: true; value: SearchRequest } | { ok: false; error: string } {
+export function parseSearchRequest(body: unknown): { ok: true; value: SearchRequest } | { ok: false; error: string } {
   if (typeof body !== "object" || body === null) return { ok: false, error: "JSON-Objekt erwartet." };
   const b = body as Record<string, unknown>;
   const criteria = (typeof b.criteria === "object" && b.criteria !== null ? b.criteria : {}) as Record<string, unknown>;
@@ -124,10 +74,11 @@ export function parseSearchRequest(
   }
   let maxPrecip: number | null = null;
   if (criteria.maxPrecipitationSum !== null && criteria.maxPrecipitationSum !== undefined) {
-    maxPrecip = num(criteria.maxPrecipitationSum, 0, ANY_PRECIP);
+    maxPrecip = num(criteria.maxPrecipitationSum, 0, 100000);
     if (maxPrecip === null) return { ok: false, error: "criteria.maxPrecipitationSum ist ungültig." };
   }
 
+  const tolerance = (b.tolerance === 1 || b.tolerance === 2 ? b.tolerance : 0) as Tolerance;
   const category = CATEGORIES.includes(b.category as Category) ? (b.category as Category) : "all";
   const limit = Math.round(num(b.limit, 1, LIMIT_MAX) ?? 100);
   const favoriteIds = Array.isArray(b.favoriteIds)
@@ -137,93 +88,30 @@ export function parseSearchRequest(
   return {
     ok: true,
     value: {
-      originLat,
-      originLon,
-      radiusKm,
-      startDate: b.startDate,
-      endDate: b.endDate,
-      minTemp,
-      maxPrecip,
-      maxWind,
-      minSun,
-      category,
-      limit,
-      favoriteIds,
+      originLat, originLon, radiusKm, startDate: b.startDate, endDate: b.endDate,
+      minTemp, maxPrecip, maxWind, minSun, tolerance, category, limit, favoriteIds,
     },
   };
 }
 
 // ---------------------------------------------------------------------------
-// SQL
+// Datenbank
 // ---------------------------------------------------------------------------
 
-const SEARCH_FN = `search_weather_destinations(
-  $1::float8, $2::float8, $3::float8, $4::date, $5::date, $6::real, $7::real, $8::real, $9::real, $10::int)`;
-const TAG_FILTER = `($11::text[] IS NULL OR s.tags && $11::text[])`;
+const SEARCH_SQL = `SELECT * FROM search_destinations_v2(
+  $1::float8, $2::float8, $3::float8, $4::date, $5::date, $6::real, $7::real, $8::real, $9::real, $10::smallint, $11::text[], $12::int)`;
 
-function fnParams(r: SearchRequest, limit: number): unknown[] {
+function searchParams(r: SearchRequest, limit: number): unknown[] {
   return [
-    r.originLat,
-    r.originLon,
-    r.radiusKm * 1000,
-    r.startDate,
-    r.endDate,
-    r.minTemp,
-    r.maxPrecip ?? ANY_PRECIP,
-    r.maxWind,
-    r.minSun,
-    limit,
-    r.category === "all" ? null : CATEGORY_TAGS[r.category],
-  ];
-}
-
-// Leichtgewichtige Zähl-Abfragen für die "Fast-Treffer". Sie bilden exakt die Logik von
-// search_weather_destinations nach (Raster im Radius + 20 km, alle Tage müssen passen,
-// Orte im exakten Radius), verzichten aber auf JSON-Aufbereitung und Sortierung.
-const MATCHING_GRIDS = (tempCriterion: boolean) => `
-  WITH o AS (SELECT ST_SetSRID(ST_MakePoint($2::float8, $1::float8), 4326)::GEOGRAPHY AS geom),
-  mg AS (
-    SELECT f.grid_id, MIN(f.temp_max) AS min_t
-    FROM weather_forecasts_daily f
-    INNER JOIN weather_grid g ON g.grid_id = f.grid_id
-    CROSS JOIN o
-    WHERE ST_DWithin(g.geom, o.geom, $3::float8 + 20000)
-      AND f.forecast_date BETWEEN $4::date AND $5::date
-      ${tempCriterion ? "AND f.temp_max >= $6::real" : "AND $6::real IS NOT NULL"}
-      AND f.precipitation_sum <= $7::real
-      AND f.wind_speed_max <= $8::real
-      AND COALESCE(f.sunshine_duration_hours, 0) >= $9::real
-    GROUP BY f.grid_id
-    HAVING COUNT(f.forecast_date) = ($5::date - $4::date) + 1
-  )`;
-const DESTINATIONS_IN_RADIUS = `
-  FROM destinations d
-  INNER JOIN mg ON mg.grid_id = d.grid_id
-  CROSS JOIN o
-  WHERE ST_DWithin(d.geom, o.geom, $3::float8)
-    AND ($10::text[] IS NULL OR d.tags && $10::text[])`;
-
-function countParams(r: SearchRequest): unknown[] {
-  return [
-    r.originLat,
-    r.originLon,
-    r.radiusKm * 1000,
-    r.startDate,
-    r.endDate,
-    r.minTemp,
-    r.maxPrecip ?? ANY_PRECIP,
-    r.maxWind,
-    r.minSun,
-    r.category === "all" ? null : CATEGORY_TAGS[r.category],
+    r.originLat, r.originLon, r.radiusKm * 1000, r.startDate, r.endDate,
+    r.minTemp, r.maxPrecip, r.maxWind, r.minSun, r.tolerance,
+    r.category === "all" ? null : CATEGORY_TAGS[r.category], limit,
   ];
 }
 
 async function countMatches(db: Queryable, r: SearchRequest): Promise<number> {
-  const { rows } = await db.query(
-    `${MATCHING_GRIDS(true)} SELECT COUNT(*)::int AS n ${DESTINATIONS_IN_RADIUS}`,
-    countParams(r)
-  );
-  return Number(rows[0]?.n ?? 0);
+  const { rows } = await db.query(SEARCH_SQL, searchParams(r, 1));
+  return Number(rows[0]?.total_count ?? 0);
 }
 
 function precipModeOf(maxPrecip: number | null): PrecipMode {
@@ -231,129 +119,73 @@ function precipModeOf(maxPrecip: number | null): PrecipMode {
   return maxPrecip <= 0 ? "dry" : "almost";
 }
 
-// ---------------------------------------------------------------------------
-// Smart Empty State: "Fast-Treffer" mit Trefferzahl je Lockerung
-// ---------------------------------------------------------------------------
+async function findRelaxations(db: Queryable, r: SearchRequest): Promise<Relaxation[]> {
+  const out: Relaxation[] = [];
+  const tryAdd = async (id: Relaxation["id"], changed: SearchRequest, patch: Relaxation["patch"]) => {
+    const n = await countMatches(db, changed);
+    if (n > 0) out.push({ id, count: n, patch });
+    return n;
+  };
 
-async function findRelaxations(db: Queryable, r: SearchRequest): Promise<ApiRelaxation[]> {
-  const out: ApiRelaxation[] = [];
-  const orte = (n: number) => (n === 1 ? "1 Ort" : `${n} Orte`);
-  const passt = (n: number) => (n === 1 ? "1 Ort passt dann" : `${n} Orte passen dann`);
-
-  // 1) Radius um +100 km erweitern (ggf. weiter, bis Treffer auftauchen)
+  // 1) Radius erweitern (+100 km, sonst weiter)
   for (const extra of [100, 200, 300]) {
     const radiusKm = Math.min(RADIUS_MAX, r.radiusKm + extra);
     if (radiusKm <= r.radiusKm) break;
-    const n = await countMatches(db, { ...r, radiusKm });
-    if (n > 0) {
-      out.push({
-        id: "radius",
-        label: `Suchradius auf ${radiusKm} km erweitern`,
-        hint: `${orte(n)} gefunden!`,
-        count: n,
-        patch: { radiusKm },
-      });
-      break;
-    }
+    if ((await tryAdd("radius", { ...r, radiusKm }, { radiusKm })) > 0) break;
   }
-
-  // 2) Temperatur senken: um 2 °C – oder so weit, bis es Treffer gibt.
-  //    Eine Abfrage liefert, wie viele Orte bei welcher Mindesttemperatur noch passen würden.
-  const temps = await db.query(
-    `${MATCHING_GRIDS(false)}
-     SELECT FLOOR(mg.min_t)::int AS t, COUNT(*)::int AS n ${DESTINATIONS_IN_RADIUS} GROUP BY 1`,
-    countParams(r)
-  );
-  const histogram = temps.rows
-    .map((row) => ({ t: Number(row.t), n: Number(row.n) }))
-    .filter((row) => Number.isFinite(row.t));
-  if (histogram.length > 0) {
-    const minTemp = Math.min(r.minTemp - 2, Math.max(...histogram.map((row) => row.t)));
-    const n = histogram.filter((row) => row.t >= minTemp).reduce((sum, row) => sum + row.n, 0);
-    if (n > 0 && minTemp < r.minTemp) {
-      out.push({
-        id: "temp",
-        label: `Temperatur auf ≥ ${minTemp} °C senken`,
-        hint: `${orte(n)} im ${r.radiusKm}-km-Radius!`,
-        count: n,
-        patch: { minTemp },
-      });
-    }
+  // 2) Toleranz erhöhen
+  if (r.tolerance < 2) {
+    const tolerance = (r.tolerance + 1) as Tolerance;
+    await tryAdd("tolerance", { ...r, tolerance }, { tolerance });
   }
-
-  const add = async (id: string, label: string, changed: SearchRequest, patch: ApiRelaxation["patch"]) => {
-    const n = await countMatches(db, changed);
-    if (n > 0) out.push({ id, label, hint: passt(n), count: n, patch });
-  };
-
-  // 3) Niederschlag lockern
+  // 3) Temperatur in 2-°C-Schritten senken, bis Treffer auftauchen (höchstens bis -5 °C)
+  for (let minTemp = r.minTemp - 2; minTemp >= Math.min(-5, r.minTemp - 2); minTemp -= 2) {
+    if ((await tryAdd("temp", { ...r, minTemp }, { minTemp })) > 0) break;
+  }
+  // 4) Niederschlag lockern
   const mode = precipModeOf(r.maxPrecip);
-  if (mode === "dry") {
-    const before = out.length;
-    await add("precip", "„Fast trocken“ (≤ 1 mm) erlauben", { ...r, maxPrecip: 1 }, { precipMode: "almost" });
-    if (out.length === before) {
-      await add("precip", "Regen ist mir egal", { ...r, maxPrecip: null }, { precipMode: "any" });
-    }
-  } else if (mode === "almost") {
-    await add("precip", "Regen ist mir egal", { ...r, maxPrecip: null }, { precipMode: "any" });
-  }
-
-  // 4) Sonnenstunden lockern
+  if (mode === "dry") await tryAdd("precip", { ...r, maxPrecip: 1 }, { precipMode: "almost" });
+  else if (mode === "almost") await tryAdd("precip", { ...r, maxPrecip: null }, { precipMode: "any" });
+  // 5) Sonne und Wind lockern, Orts-Charakter öffnen
   if (r.minSun >= 2) {
     const minSun = Math.max(0, r.minSun - 2);
-    await add("sun", `Sonne auf ≥ ${minSun} Std. senken`, { ...r, minSun }, { minSun });
+    await tryAdd("sun", { ...r, minSun }, { minSun });
   }
-
-  // 5) Wind lockern
-  if (r.maxWind <= 50) {
-    const maxWind = r.maxWind + 10;
-    await add("wind", `Wind bis ${maxWind} km/h erlauben`, { ...r, maxWind }, { maxWind });
-  }
-
-  // 6) Orts-Charakter öffnen
-  if (r.category !== "all") {
-    await add("category", "Alle Orts-Typen anzeigen", { ...r, category: "all" }, { category: "all" });
-  }
-
+  if (r.maxWind <= 50) await tryAdd("wind", { ...r, maxWind: r.maxWind + 10 }, { maxWind: r.maxWind + 10 });
+  if (r.category !== "all") await tryAdd("category", { ...r, category: "all" }, { category: "all" });
   return out;
 }
 
-// ---------------------------------------------------------------------------
-// Suche
-// ---------------------------------------------------------------------------
-
-function fulfilsCriteria(days: ApiDaily[], r: SearchRequest): boolean {
-  const inRange = days.filter((d) => d.date >= r.startDate && d.date <= r.endDate);
-  if (inRange.length !== dayDiff(r.startDate, r.endDate) + 1) return false;
-  return inRange.every(
-    (d) =>
-      d.tempMax >= r.minTemp &&
-      d.precip <= (r.maxPrecip ?? ANY_PRECIP) &&
-      d.wind <= r.maxWind &&
-      (d.sunshine ?? 0) >= r.minSun
-  );
+function toDaily(row: any) {
+  const start = new Date(`${String(row.start_date).slice(0, 10)}T12:00:00Z`);
+  const tmax: number[] = row.temp_max ?? [];
+  return tmax.map((_, i) => ({
+    date: new Date(start.getTime() + i * 86400000).toISOString().slice(0, 10),
+    tempMax: Number(row.temp_max[i]),
+    tempMin: Number(row.temp_min[i]),
+    precip: Number(row.precip[i]),
+    precipProb: row.precip_prob?.[i] == null ? null : Number(row.precip_prob[i]),
+    wind: Number(row.wind_max[i]),
+    sunshine: row.sunshine?.[i] == null ? null : Number(row.sunshine[i]),
+    weatherCode: Number(row.weather_code[i]),
+  }));
 }
 
-export async function runSearch(db: Queryable, r: SearchRequest): Promise<SearchResponse> {
+export async function runSearch(db: Queryable, r: SearchRequest) {
   const started = Date.now();
 
-  // 1) Treffer über die PostGIS-Funktion ("Alle Tage müssen passen").
-  //    Die Funktion wird bewusst ohne inneres Limit aufgerufen und erst außen sortiert und
-  //    begrenzt: Mit kleinem p_limit wählt der Planer einen Index-Scan über tourism_score,
-  //    der in Messungen um ein Vielfaches langsamer war (ca. 3 s statt 0,2 s).
-  const matches = await db.query(
-    `SELECT s.destination_id, COUNT(*) OVER () AS total
-     FROM ${SEARCH_FN} s
-     WHERE ${TAG_FILTER}
-     ORDER BY s.tourism_score DESC, s.avg_temp_max DESC, s.population DESC
-     LIMIT $12::int`,
-    [...fnParams(r, NO_LIMIT), r.limit]
-  );
-  const matchIds: number[] = matches.rows.map((row) => Number(row.destination_id));
-  const totalMatches = Number(matches.rows[0]?.total ?? 0);
+  // 1) Treffer (die Datenbank sortiert: volle Treffer, Übereinstimmung, Tourismus-Score)
+  const matches = await db.query(SEARCH_SQL, searchParams(r, r.limit));
+  const matchRows = matches.rows.map((row) => ({
+    id: Number(row.destination_id),
+    pct: Number(row.match_pct),
+    strict: row.strict_match === true || row.strict_match === "t",
+  }));
+  const matchIds = matchRows.map((m) => m.id);
+  const totalMatches = Number(matches.rows[0]?.total_count ?? 0);
 
-  // 2) Bekannte Ausflugsziele im Radius, die (noch) nicht unter den Treffern sind
-  const candidates = await db.query(
+  // 2) Bekannte Orte im Radius, die keine Treffer sind (gedimmte Punkte auf der Karte)
+  const others = await db.query(
     `SELECT d.destination_id
      FROM destinations d
      WHERE ST_DWithin(d.geom, ST_SetSRID(ST_MakePoint($2::float8, $1::float8), 4326)::GEOGRAPHY, $3::float8)
@@ -363,81 +195,64 @@ export async function runSearch(db: Queryable, r: SearchRequest): Promise<Search
      LIMIT $6::int`,
     [r.originLat, r.originLon, r.radiusKm * 1000, OTHERS_MIN_SCORE, matchIds, OTHERS_LIMIT]
   );
-  const candidateIds: number[] = candidates.rows.map((row) => Number(row.destination_id));
+  const otherIds: number[] = others.rows.map((row) => Number(row.destination_id));
 
-  // 3) Stammdaten aller beteiligten Orte (Treffer, Kandidaten, Merkliste)
-  const allIds = [...new Set([...matchIds, ...candidateIds, ...r.favoriteIds])];
+  // 3) Stammdaten (Treffer, Nicht-Treffer, Merkliste) inkl. Höhenkorrektur je Ort
+  const allIds = [...new Set([...matchIds, ...otherIds, ...r.favoriteIds])];
   const destRows = await db.query(
-    `SELECT destination_id, name, country_code, admin_region, lat, lon, population, tourism_score, tags, grid_id
-     FROM destinations WHERE destination_id = ANY($1::int[])`,
+    `SELECT d.destination_id, d.name, d.name_de, d.name_en, d.country_code, d.admin_region, d.admin_region_de,
+            d.admin_region_en, d.lat, d.lon, d.elevation, d.population, d.tourism_score, d.tags, d.grid_id,
+            d.image_file, d.image_author, d.image_license,
+            LEAST(8, GREATEST(-8, (COALESCE(g.elevation, d.elevation, 0) - COALESCE(d.elevation, g.elevation, 0)) * 0.0065)) AS corr
+     FROM destinations d JOIN weather_grid g ON g.grid_id = d.grid_id
+     WHERE d.destination_id = ANY($1::int[])`,
     [allIds]
   );
-  const destinations: ApiDestination[] = destRows.rows.map((row) => ({
+  const destinations = destRows.rows.map((row) => ({
     id: Number(row.destination_id),
     name: String(row.name),
+    nameDe: row.name_de ?? null,
+    nameEn: row.name_en ?? null,
     countryCode: String(row.country_code),
     adminRegion: row.admin_region ?? null,
+    adminRegionDe: row.admin_region_de ?? null,
+    adminRegionEn: row.admin_region_en ?? null,
     lat: Number(row.lat),
     lon: Number(row.lon),
+    elevation: row.elevation == null ? null : Number(row.elevation),
     population: Number(row.population ?? 0),
     tourismScore: Number(row.tourism_score ?? 0),
     tags: Array.isArray(row.tags) ? row.tags.map(String) : [],
     gridId: Number(row.grid_id),
+    tempCorrection: Math.round(Number(row.corr ?? 0) * 10) / 10,
+    image: row.image_file
+      ? { file: String(row.image_file), author: String(row.image_author ?? ""), license: String(row.image_license ?? "") }
+      : null,
   }));
 
-  // 4) Prognosen je Rasterpunkt (inkl. Vortag) für Timeline und Tages-Nachweis
+  // 4) Tageswerte je Rasterpunkt (Timeline, Tages-Nachweis)
   const gridIds = [...new Set(destinations.map((d) => d.gridId))];
-  const forecastRows = await db.query(
-    `SELECT grid_id, forecast_date::text AS date, temp_max, temp_min, precipitation_sum,
-            precipitation_prob, wind_speed_max, sunshine_duration_hours, weather_code
-     FROM weather_forecasts_daily
-     WHERE grid_id = ANY($1::int[])
-     ORDER BY grid_id, forecast_date`,
+  const fc = await db.query(
+    `SELECT grid_id, start_date::text AS start_date, temp_max, temp_min, precip, precip_prob, wind_max, sunshine, weather_code
+     FROM weather_forecasts WHERE grid_id = ANY($1::int[])`,
     [gridIds]
   );
-  const forecasts: Record<string, ApiDaily[]> = {};
-  for (const row of forecastRows.rows) {
-    const key = String(row.grid_id);
-    (forecasts[key] ??= []).push({
-      date: String(row.date).slice(0, 10),
-      tempMax: Number(row.temp_max),
-      tempMin: Number(row.temp_min),
-      precip: Number(row.precipitation_sum),
-      precipProb: row.precipitation_prob === null || row.precipitation_prob === undefined ? null : Number(row.precipitation_prob),
-      wind: Number(row.wind_speed_max),
-      sunshine: row.sunshine_duration_hours === null || row.sunshine_duration_hours === undefined ? null : Number(row.sunshine_duration_hours),
-      weatherCode: Number(row.weather_code),
-    });
-  }
+  const forecasts: Record<string, ReturnType<typeof toDaily>> = {};
+  for (const row of fc.rows) forecasts[String(row.grid_id)] = toDaily(row);
 
-  // 5) Gedimmte Karten-Punkte: nur Kandidaten, die die Kriterien wirklich verfehlen.
-  //    (Passende Orte jenseits des Limits sind keine "Nicht-Treffer" und werden ausgelassen.)
-  const byId = new Map(destinations.map((d) => [d.id, d]));
-  const wantedTags = r.category === "all" ? null : CATEGORY_TAGS[r.category];
-  const otherIds = candidateIds.filter((id) => {
-    const dest = byId.get(id);
-    if (!dest) return false;
-    const weatherOk = fulfilsCriteria(forecasts[String(dest.gridId)] ?? [], r);
-    const categoryOk = wantedTags === null || wantedTags.some((tag) => dest.tags.includes(tag));
-    return !(weatherOk && categoryOk);
-  });
-
-  // 6) Fast-Treffer nur berechnen, wenn es keinen Treffer gibt
+  // 5) Fast-Treffer nur bei leerem Ergebnis
   const relaxations = totalMatches === 0 ? await findRelaxations(db, r) : [];
 
-  const updated = await db.query("SELECT MAX(last_updated) AS t FROM weather_grid");
+  const updated = await db.query("SELECT MAX(updated_at) AS t FROM weather_forecasts");
   const t = updated.rows[0]?.t;
 
   return {
-    matchIds,
+    matches: matchRows,
     totalMatches,
     otherIds,
     destinations,
     forecasts,
     relaxations,
-    meta: {
-      tookMs: Date.now() - started,
-      weatherUpdatedAt: t ? new Date(t).toISOString() : null,
-    },
+    meta: { tookMs: Date.now() - started, weatherUpdatedAt: t ? new Date(t).toISOString() : null },
   };
 }

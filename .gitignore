@@ -20,3 +20,6 @@ __pycache__/
 *.docx
 SPEC.md
 ~$*
+
+# Fehlerprotokolle der Hilfsskripte
+*-fehler.txt

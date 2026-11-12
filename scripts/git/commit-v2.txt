@@ -1,0 +1,9 @@
+Sunify 2.0
+
+Weltweite Wetterdaten (Open-Meteo + NOAA GFS), adaptives Raster mit Hoehenkorrektur,
+Deutsch/Englisch mit Einheitenwahl, installierbare App (PWA), Ortsfotos von Wikimedia Commons,
+Aktivitaetsprofile, Tourismus-Score und Toleranzfilter. Datenjobs laufen in GitHub Actions,
+die App bei Netlify.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

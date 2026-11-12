@@ -1,13 +1,17 @@
 "use client";
 
-// Screen 3: Ergebnis-Listenansicht mit Sortierung und Orts-Ergebniskarten.
+// Screen 3: Ergebnis-Listenansicht mit Sortierung und Orts-Ergebniskarten (mit Foto, Treffer-Grad).
 
 import { useState } from "react";
-import { ArrowUpDown, BadgeCheck, ChevronDown, ChevronRight, Heart, MapPinned } from "lucide-react";
+import { ArrowUpDown, BadgeCheck, ChevronDown, ChevronRight, CircleDashed, Heart, MapPinned } from "lucide-react";
 import { formatWeekdayRange, weekdayShort } from "@/lib/dates";
 import { groupResults } from "@/lib/grouping";
+import { fmtDist, fmtPrecip, fmtSpeed, fmtTemp, formatNumber, tr, trn } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n-react";
+import { commonsPage, commonsThumb } from "@/lib/photos";
+import { checkDay } from "@/lib/search";
 import type { Destination, Filters, SearchResult, SortKey } from "@/lib/types";
-import { formatNumber, weatherEmoji } from "@/lib/weather";
+import { weatherEmoji } from "@/lib/weather";
 
 export const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "score", label: "Beste Empfehlung" },
@@ -17,7 +21,7 @@ export const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "population", label: "Einwohnerzahl" },
 ];
 
-/** Atmosphären-Header: Farbverlauf nach Orts-Charakter (Platzhalter für spätere Fotos). */
+/** Farbverlauf nach Orts-Charakter – Hintergrund, wenn es kein Foto gibt, und Tönung über dem Foto. */
 export function destinationGradient(destination: Destination): string {
   const primary = destination.tags[0];
   switch (primary) {
@@ -37,10 +41,11 @@ export function destinationGradient(destination: Destination): string {
 }
 
 export function SortSelect({ sort, onSort }: { sort: SortKey; onSort: (sort: SortKey) => void }) {
+  useI18n();
   return (
     <label className="flex items-center gap-1.5 rounded-lg border border-ink-200 bg-white py-1.5 pl-2 pr-1 text-xs text-ink-600">
       <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-ink-400" />
-      <span className="sr-only">Sortieren nach</span>
+      <span className="sr-only">{tr("Sortieren nach")}</span>
       <select
         value={sort}
         onChange={(e) => onSort(e.target.value as SortKey)}
@@ -48,11 +53,59 @@ export function SortSelect({ sort, onSort }: { sort: SortKey; onSort: (sort: Sor
       >
         {SORT_OPTIONS.map((o) => (
           <option key={o.key} value={o.key}>
-            {o.label}
+            {tr(o.label)}
           </option>
         ))}
       </select>
     </label>
+  );
+}
+
+/** Kopfbereich mit Foto (falls vorhanden) und Quellenangabe. */
+export function PhotoHeader({
+  destination,
+  height,
+  children,
+  creditClassName = "",
+}: {
+  destination: Destination;
+  height: string;
+  children: React.ReactNode;
+  creditClassName?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  const image = !failed ? destination.image : null;
+  return (
+    <div className={`relative ${height} overflow-hidden bg-gradient-to-br ${destinationGradient(destination)} text-white`}>
+      {image ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={commonsThumb(image.file, 640)}
+            alt=""
+            loading="lazy"
+            onError={() => setFailed(true)}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/10 to-black/55" />
+          <a
+            href={commonsPage(image.file)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className={`absolute bottom-1 right-2 z-10 max-w-[70%] truncate text-[9.5px] text-white/80 hover:text-white hover:underline ${creditClassName}`}
+            title={`${image.author} · ${image.license} · Wikimedia Commons`}
+          >
+            {tr("Foto")}: {image.author} · {image.license}
+          </a>
+        </>
+      ) : (
+        <span className="pointer-events-none absolute -bottom-3 right-12 select-none text-6xl opacity-30">
+          {destination.emoji}
+        </span>
+      )}
+      <div className="relative h-full">{children}</div>
+    </div>
   );
 }
 
@@ -64,7 +117,7 @@ interface ResultCardProps {
   onSelect: (id: number) => void;
   onHover: (id: number | null) => void;
   onToggleFavorite: (id: number) => void;
-  /** Weitere Treffer am selben Wetter-Rasterpunkt (identisches Wetter) */
+  /** Weitere Treffer am selben Wetter-Rasterpunkt */
   others?: SearchResult[];
   favorites?: number[];
   highlightId?: number | null;
@@ -89,6 +142,7 @@ export function ResultCard({
   const rangeLabel = formatWeekdayRange(filters.startDate, filters.endDate);
   const visibleDays = result.days.slice(0, 4);
   const hiddenDays = result.days.length - visibleDays.length;
+  const strict = result.strict !== false;
 
   return (
     <article
@@ -98,32 +152,30 @@ export function ResultCard({
         highlighted ? "border-sun-400 shadow-lift ring-2 ring-sun-200" : "border-ink-100 shadow-soft hover:shadow-lift"
       }`}
     >
-      {/* Atmosphären-Header */}
-      <div className={`relative h-[76px] bg-gradient-to-br ${destinationGradient(d)} px-4 py-3 text-white`}>
-        <span className="pointer-events-none absolute -bottom-3 right-12 select-none text-6xl opacity-30">
-          {d.emoji}
-        </span>
-        <div className="flex items-start justify-between gap-2">
-          <span className="rounded-full bg-black/25 px-2.5 py-1 text-[11.5px] font-semibold backdrop-blur-sm">
-            {d.area} • {result.distanceKm} km entfernt
-          </span>
-          <button
-            type="button"
-            onClick={() => onToggleFavorite(d.id)}
-            aria-pressed={isFavorite}
-            aria-label={isFavorite ? `${d.name} von der Merkliste entfernen` : `${d.name} merken`}
-            title={isFavorite ? "Von der Merkliste entfernen" : "Auf die Merkliste"}
-            className="rounded-full bg-white/90 p-1.5 text-ink-700 shadow-soft transition hover:scale-110 active:scale-95"
-          >
-            <Heart className={`h-4 w-4 ${isFavorite ? "fill-rose-500 text-rose-500" : ""}`} />
-          </button>
+      <PhotoHeader destination={d} height={d.image ? "h-[120px]" : "h-[76px]"}>
+        <div className="flex h-full flex-col justify-between px-4 py-3">
+          <div className="flex items-start justify-between gap-2">
+            <span className="truncate rounded-full bg-black/30 px-2.5 py-1 text-[11.5px] font-semibold backdrop-blur-sm">
+              {d.area} • {tr("{d} entfernt", { d: fmtDist(result.distanceKm) })}
+            </span>
+            <button
+              type="button"
+              onClick={() => onToggleFavorite(d.id)}
+              aria-pressed={isFavorite}
+              aria-label={isFavorite ? tr("{name} von der Merkliste entfernen", { name: d.name }) : tr("{name} merken", { name: d.name })}
+              title={isFavorite ? tr("Von der Merkliste entfernen") : tr("Auf die Merkliste")}
+              className="shrink-0 rounded-full bg-white/90 p-1.5 text-ink-700 shadow-soft transition hover:scale-110 active:scale-95"
+            >
+              <Heart className={`h-4 w-4 ${isFavorite ? "fill-rose-500 text-rose-500" : ""}`} />
+            </button>
+          </div>
+          <div className="flex gap-1.5 pr-24 text-[11px] font-medium text-white/95 drop-shadow">
+            {d.hashtags.map((tag) => (
+              <span key={tag}>#{tag}</span>
+            ))}
+          </div>
         </div>
-        <div className="mt-2 flex gap-1.5 text-[11px] font-medium text-white/90">
-          {d.hashtags.map((tag) => (
-            <span key={tag}>#{tag}</span>
-          ))}
-        </div>
-      </div>
+      </PhotoHeader>
 
       <div className="p-4">
         <div className="flex items-baseline justify-between gap-2">
@@ -135,31 +187,38 @@ export function ResultCard({
         <p className="mt-0.5 truncate text-[13px] text-ink-500">{d.teaser}</p>
 
         {/* Wetter-Match-Badge */}
-        <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-2">
-          <div className="flex items-center gap-1.5 text-[13px] font-semibold text-emerald-700">
-            <BadgeCheck className="h-4 w-4" />
-            100 % Treffer für {rangeLabel}
+        <div className={`mt-3 rounded-xl px-3 py-2 ${strict ? "bg-emerald-50" : "bg-amber-50"}`}>
+          <div className={`flex items-center gap-1.5 text-[13px] font-semibold ${strict ? "text-emerald-700" : "text-amber-700"}`}>
+            {strict ? <BadgeCheck className="h-4 w-4" /> : <CircleDashed className="h-4 w-4" />}
+            {strict
+              ? tr("100 % Treffer für {range}", { range: rangeLabel })
+              : tr("Fast-Treffer: {pct} % Übereinstimmung", { pct: result.matchPct ?? 0 })}
           </div>
-          <div className="mt-0.5 text-[12.5px] tabular-nums text-emerald-900/80">
-            Ø {formatNumber(result.avgTempMax, 0)} °C | {formatNumber(result.totalPrecip)} mm Regen |{" "}
-            {result.maxWind} km/h Wind | Ø {formatNumber(result.avgSunshine)} Std. Sonne
+          <div className={`mt-0.5 text-[12.5px] tabular-nums ${strict ? "text-emerald-900/80" : "text-amber-900/80"}`}>
+            Ø {fmtTemp(result.avgTempMax)} | {fmtPrecip(result.totalPrecip)} {tr("Regen")} | {fmtSpeed(result.maxWind)} {tr("Wind")} | Ø{" "}
+            {tr("{h} Std. Sonne", { h: formatNumber(result.avgSunshine) })}
           </div>
         </div>
 
-        {/* Mini-Tagesvorschau */}
+        {/* Mini-Tagesvorschau (gelb umrandet: Tag weicht im Toleranzbereich ab) */}
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {visibleDays.map((day) => (
-            <span
-              key={day.date}
-              className="rounded-lg border border-ink-100 bg-ink-50 px-2 py-1 text-[12.5px] tabular-nums text-ink-800"
-            >
-              <span className="font-semibold">{weekdayShort(day.date)}:</span> {weatherEmoji(day.weatherCode)}{" "}
-              {Math.round(day.tempMax)}°C
-            </span>
-          ))}
+          {visibleDays.map((day) => {
+            const ok = checkDay(day, filters).allOk;
+            return (
+              <span
+                key={day.date}
+                className={`rounded-lg border px-2 py-1 text-[12.5px] tabular-nums text-ink-800 ${
+                  ok ? "border-ink-100 bg-ink-50" : "border-amber-300 bg-amber-50"
+                }`}
+              >
+                <span className="font-semibold">{weekdayShort(day.date)}:</span> {weatherEmoji(day.weatherCode)}{" "}
+                {fmtTemp(day.tempMax)}
+              </span>
+            );
+          })}
           {hiddenDays > 0 && (
             <span className="rounded-lg px-1.5 py-1 text-[12.5px] text-ink-400">
-              +{hiddenDays} {hiddenDays === 1 ? "Tag" : "Tage"}
+              +{trn(hiddenDays, "{n} Tag", "{n} Tage")}
             </span>
           )}
         </div>
@@ -169,12 +228,12 @@ export function ResultCard({
           onClick={() => onSelect(d.id)}
           className="mt-4 flex w-full items-center justify-center gap-1 rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sun-600 active:scale-[.99]"
         >
-          Details & Unterkünfte
+          {tr("Details & Unterkünfte")}
           <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
         </button>
       </div>
 
-      {/* Weitere Orte mit identischem Wetter (gleicher Rasterpunkt) */}
+      {/* Weitere Orte am selben Rasterpunkt */}
       {others.length > 0 && (
         <div className="border-t border-ink-100 bg-ink-50/70">
           <div className="flex items-center gap-1 px-2 py-1.5">
@@ -188,7 +247,7 @@ export function ResultCard({
                 +{others.length}
               </span>
               <span className="truncate">
-                {others.length === 1 ? "weiterer Ort" : "weitere Orte"} mit gleichem Wetter in der Nähe
+                {others.length === 1 ? tr("weiterer Ort mit ähnlichem Wetter in der Nähe") : tr("weitere Orte mit ähnlichem Wetter in der Nähe")}
               </span>
               <ChevronDown className={`ml-auto h-4 w-4 shrink-0 text-ink-400 transition ${expanded ? "rotate-180" : ""}`} />
             </button>
@@ -196,8 +255,8 @@ export function ResultCard({
               <button
                 type="button"
                 onClick={() => onShowOnMap([d.id, ...others.map((o) => o.destination.id)])}
-                title="Diese Orte auf der Karte zeigen"
-                aria-label="Diese Orte auf der Karte zeigen"
+                title={tr("Diese Orte auf der Karte zeigen")}
+                aria-label={tr("Diese Orte auf der Karte zeigen")}
                 className="shrink-0 rounded-lg p-2 text-ink-500 transition hover:bg-ink-100 hover:text-sun-600"
               >
                 <MapPinned className="h-4 w-4" />
@@ -214,9 +273,7 @@ export function ResultCard({
                     key={o.id}
                     onMouseEnter={() => onHover(o.id)}
                     onMouseLeave={() => onHover(d.id)}
-                    className={`flex items-center gap-1 rounded-lg transition ${
-                      highlightId === o.id ? "bg-sun-100" : "hover:bg-white"
-                    }`}
+                    className={`flex items-center gap-1 rounded-lg transition ${highlightId === o.id ? "bg-sun-100" : "hover:bg-white"}`}
                   >
                     <button
                       type="button"
@@ -227,7 +284,7 @@ export function ResultCard({
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13.5px] font-semibold text-ink-900">{o.name}</span>
                         <span className="block truncate text-[11.5px] text-ink-500">
-                          {other.distanceKm} km entfernt
+                          {tr("{d} entfernt", { d: fmtDist(other.distanceKm) })} · Ø {fmtTemp(other.avgTempMax)}
                           {o.hashtags.length > 0 && ` · ${o.hashtags.map((t) => `#${t}`).join(" ")}`}
                         </span>
                       </span>
@@ -237,7 +294,7 @@ export function ResultCard({
                       type="button"
                       onClick={() => onToggleFavorite(o.id)}
                       aria-pressed={fav}
-                      aria-label={fav ? `${o.name} von der Merkliste entfernen` : `${o.name} merken`}
+                      aria-label={fav ? tr("{name} von der Merkliste entfernen", { name: o.name }) : tr("{name} merken", { name: o.name })}
                       className="shrink-0 rounded-lg p-2 text-ink-400 transition hover:text-rose-500"
                     >
                       <Heart className={`h-4 w-4 ${fav ? "fill-rose-500 text-rose-500" : ""}`} />
@@ -274,27 +331,35 @@ export default function ResultList({
   onToggleFavorite,
   onShowOnMap,
 }: ResultListProps) {
-  // Orte mit identischem Wetter (gleicher Rasterpunkt) zu einer Karte bündeln
+  useI18n();
   const groups = groupResults(results);
+  const firstNear = groups.findIndex((g) => g.lead.strict === false);
   return (
     <div className="flex flex-col gap-3">
-      {groups.map((group) => {
+      {groups.map((group, index) => {
         const ids = [group.lead.destination.id, ...group.others.map((o) => o.destination.id)];
         return (
-          <ResultCard
-            key={group.key}
-            result={group.lead}
-            filters={filters}
-            highlighted={highlightId !== null && ids.includes(highlightId)}
-            isFavorite={favorites.includes(group.lead.destination.id)}
-            onSelect={onSelect}
-            onHover={onHover}
-            onToggleFavorite={onToggleFavorite}
-            others={group.others}
-            favorites={favorites}
-            highlightId={highlightId}
-            onShowOnMap={onShowOnMap}
-          />
+          <div key={group.key} className="flex flex-col gap-3">
+            {index === firstNear && (
+              <div className="mt-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-amber-700">
+                <CircleDashed className="h-3.5 w-3.5" />
+                {index === 0 ? tr("Keine vollen Treffer – diese Orte passen fast") : tr("Fast-Treffer")}
+              </div>
+            )}
+            <ResultCard
+              result={group.lead}
+              filters={filters}
+              highlighted={highlightId !== null && ids.includes(highlightId)}
+              isFavorite={favorites.includes(group.lead.destination.id)}
+              onSelect={onSelect}
+              onHover={onHover}
+              onToggleFavorite={onToggleFavorite}
+              others={group.others}
+              favorites={favorites}
+              highlightId={highlightId}
+              onShowOnMap={onShowOnMap}
+            />
+          </div>
         );
       })}
     </div>

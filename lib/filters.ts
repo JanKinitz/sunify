@@ -3,11 +3,13 @@
 import { DEFAULT_ORIGIN, POPULAR_ORIGINS } from "./origins";
 import { seasonalNormals } from "./season";
 import { clampToForecast, isValidISO, rangeForPreset } from "./dates";
+import { CATEGORIES } from "./categories";
+import { tr } from "./i18n";
 import { RADIUS_MAX, RADIUS_MIN } from "./search";
-import type { Category, DatePreset, Filters, PrecipMode } from "./types";
+import type { Category, DatePreset, Filters, PrecipMode, Tolerance } from "./types";
 
 export const TEMP_MIN = -5;
-export const TEMP_MAX = 30;
+export const TEMP_MAX = 35;
 export const WIND_MIN = 5;
 export const WIND_MAX = 60;
 export const SUN_MAX = 12;
@@ -27,12 +29,12 @@ export function defaultFilters(): Filters {
     maxWind: 30,
     minSun: Math.round(normals.maxSun * 0.4),
     category: "all",
+    tolerance: 0,
   };
 }
 
 const PRESETS: DatePreset[] = ["weekend", "nextWeekend", "tomorrow", "custom"];
 const PRECIP: PrecipMode[] = ["dry", "almost", "any"];
-const CATEGORIES: Category[] = ["all", "mountains", "water", "historic", "wine"];
 
 export function filtersToQuery(filters: Filters): string {
   const q = new URLSearchParams();
@@ -56,6 +58,7 @@ export function filtersToQuery(filters: Filters): string {
   q.set("w", String(filters.maxWind));
   q.set("sun", String(filters.minSun));
   q.set("c", filters.category);
+  if (filters.tolerance > 0) q.set("tol", String(filters.tolerance));
   return q.toString();
 }
 
@@ -79,7 +82,7 @@ export function filtersFromQuery(search: string): Filters {
     origin = POPULAR_ORIGINS.find((o) => o.id === originId) ?? base.origin;
   } else if (q.get("lat") && q.get("lon") && Number.isFinite(lat) && Number.isFinite(lon)) {
     const name = (q.get("n") ?? "").trim().slice(0, 80);
-    origin = name ? { id: `geo:${name}`, name, lat, lon } : { id: "gps", name: "Geteilter Standort", lat, lon };
+    origin = name ? { id: `geo:${name}`, name, lat, lon } : { id: "gps", name: tr("Geteilter Standort"), lat, lon };
   }
 
   const presetRaw = q.get("d") as DatePreset | null;
@@ -111,5 +114,6 @@ export function filtersFromQuery(search: string): Filters {
     maxWind: num("w", base.maxWind, WIND_MIN, WIND_MAX),
     minSun: num("sun", base.minSun, 0, SUN_MAX),
     category: categoryRaw && CATEGORIES.includes(categoryRaw) ? categoryRaw : base.category,
+    tolerance: num("tol", 0, 0, 2) as Tolerance,
   };
 }

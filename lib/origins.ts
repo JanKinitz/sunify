@@ -27,3 +27,8 @@ export const POPULAR_ORIGINS: Origin[] = [
 ];
 
 export const DEFAULT_ORIGIN: Origin = POPULAR_ORIGINS[0];
+
+/** Anzeigename eines Startorts in der gewählten Sprache (bekannte Städte haben einen Eintrag im Wörterbuch). */
+export function originLabel(origin: Origin, translate: (s: string) => string): string {
+  return POPULAR_ORIGINS.some((o) => o.id === origin.id) ? translate(origin.name) : origin.name;
+}

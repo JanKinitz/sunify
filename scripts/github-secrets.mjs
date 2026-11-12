@@ -19,7 +19,7 @@ for (const key of SECRETS) {
     console.error(`${key} fehlt in .env.local.`);
     process.exit(1);
   }
-  const result = spawnSync("gh", ["secret", "set", key], { input: value, encoding: "utf8", shell: process.platform === "win32" });
+  const result = spawnSync("gh", ["secret", "set", key], { input: value, encoding: "utf8", shell: false });
   if (result.status !== 0) {
     console.error(`${key} konnte nicht hinterlegt werden.`);
     if (result.stderr) console.error(result.stderr.split(value).join("***"));

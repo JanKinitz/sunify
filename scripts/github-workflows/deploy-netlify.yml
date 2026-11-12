@@ -1,0 +1,61 @@
+# Veröffentlicht Sunify 2.0 bei jedem Push auf main (und auf Knopfdruck) bei Netlify.
+# Benötigt die Secrets NETLIFY_AUTH_TOKEN und NETLIFY_SITE_ID (legt setup-netlify.bat an).
+name: Veröffentlichen (Netlify)
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "pipeline/**"
+      - "supabase/**"
+      - "**.md"
+      - "**.bat"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-netlify
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+    steps:
+      - name: Netlify eingerichtet?
+        id: check
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "Netlify ist noch nicht eingerichtet (setup-netlify.bat) - Veröffentlichung übersprungen."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.ready == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.ready == 'true'
+        with:
+          node-version: 22
+
+      - name: Abhängigkeiten installieren
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Bauen und veröffentlichen
+        if: steps.check.outputs.ready == 'true'
+        run: npx --yes netlify-cli@latest deploy --build --prod --site "$NETLIFY_SITE_ID" --message "GitHub ${GITHUB_SHA::7}"
+
+      - name: Funktionstest
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          URL=$(npx --yes netlify-cli@latest api getSite --data "{\"site_id\":\"$NETLIFY_SITE_ID\"}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).ssl_url||JSON.parse(s).url))')
+          echo "Adresse: $URL"
+          curl -fsS "$URL/api/status" | head -c 800 || echo "Status noch nicht abrufbar (Datenbank evtl. noch nicht eingerichtet)."
+          echo
+          echo "### Sunify 2.0 ist online: $URL" >> "$GITHUB_STEP_SUMMARY"

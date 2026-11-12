@@ -1,0 +1,7 @@
+# Datenjobs von Sunify 2.0 (laufen in GitHub Actions)
+psycopg[binary]>=3.2
+numpy>=2.0
+requests>=2.32
+xarray>=2025.1.2
+zarr>=3.0.8
+dynamical-catalog>=0.8.0

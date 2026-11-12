@@ -9,12 +9,16 @@ import {
   LocateFixed,
   MapPin,
   RotateCcw,
+  Sparkles,
   Sun,
   Thermometer,
   Wind,
 } from "lucide-react";
 import { geocodePlaces } from "@/lib/geocode";
+import { fmtDist, fmtPrecip, fmtSpeed, fmtTempSpaced, formatDate, tr } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n-react";
 import { POPULAR_ORIGINS } from "@/lib/origins";
+import { activeProfile, PROFILES } from "@/lib/profiles";
 import {
   addDays,
   formatRange,
@@ -24,7 +28,7 @@ import {
 } from "@/lib/dates";
 import { SUN_MAX, TEMP_MAX, TEMP_MIN, WIND_MAX, WIND_MIN } from "@/lib/filters";
 import { RADIUS_MAX, RADIUS_MIN, RADIUS_STEP } from "@/lib/search";
-import type { Category, DatePreset, Filters, Origin, PrecipMode } from "@/lib/types";
+import type { Category, DatePreset, Filters, Origin, PrecipMode, Tolerance } from "@/lib/types";
 import { tempColor, tempLabel, windLabel } from "@/lib/weather";
 
 interface FilterPanelProps {
@@ -54,6 +58,13 @@ const CATEGORY_OPTIONS: { key: Category; label: string }[] = [
   { key: "water", label: "🌊 Am Wasser / See" },
   { key: "historic", label: "🏰 Historische Städte" },
   { key: "wine", label: "🍇 Weinregionen" },
+  { key: "wellness", label: "♨️ Wellness & Thermen" },
+];
+
+const TOLERANCE_OPTIONS: { key: Tolerance; label: string; sub: string }[] = [
+  { key: 0, label: "Strikt", sub: "alles muss passen" },
+  { key: 1, label: "Etwas flexibel", sub: "kleiner Spielraum" },
+  { key: 2, label: "Flexibel", sub: "auch Ausreißer-Tage" },
 ];
 
 function Section({
@@ -72,7 +83,7 @@ function Section({
       <header className="mb-3 flex items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-ink-600">
           <span className="text-sun-500">{icon}</span>
-          {title}
+          {tr(title)}
         </h3>
         {aside}
       </header>
@@ -215,7 +226,7 @@ function OriginField({
 
   const locate = () => {
     if (!("geolocation" in navigator)) {
-      onNotify("Dein Browser unterstützt keine Standortabfrage.");
+      onNotify(tr("Dein Browser unterstützt keine Standortabfrage."));
       return;
     }
     setLocating(true);
@@ -224,15 +235,15 @@ function OriginField({
         setLocating(false);
         pick({
           id: "gps",
-          name: "Mein Standort",
+          name: tr("Mein Standort"),
           lat: pos.coords.latitude,
           lon: pos.coords.longitude,
         });
-        onNotify("Standort übernommen 📍");
+        onNotify(tr("Standort übernommen 📍"));
       },
       () => {
         setLocating(false);
-        onNotify("Standort konnte nicht ermittelt werden – bitte Ort auswählen.");
+        onNotify(tr("Standort konnte nicht ermittelt werden – bitte Ort auswählen."));
       },
       { enableHighAccuracy: false, timeout: 8000 }
     );
@@ -246,8 +257,8 @@ function OriginField({
           <input
             type="text"
             value={query}
-            aria-label="Startort"
-            placeholder="Startort eingeben …"
+            aria-label={tr("Startort")}
+            placeholder={tr("Startort eingeben …")}
             autoComplete="off"
             onFocus={(e) => {
               setOpen(true);
@@ -267,8 +278,8 @@ function OriginField({
         <button
           type="button"
           onClick={locate}
-          title="GPS-Standort nutzen"
-          aria-label="GPS-Standort nutzen"
+          title={tr("GPS-Standort nutzen")}
+          aria-label={tr("GPS-Standort nutzen")}
           className="flex shrink-0 items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-700 transition hover:border-sun-400 hover:text-sun-600"
         >
           <LocateFixed className={`h-4 w-4 ${locating ? "animate-spin" : ""}`} />
@@ -279,7 +290,7 @@ function OriginField({
         <ul className="thin-scroll absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-xl border border-ink-100 bg-white py-1 shadow-lift">
           {suggestions.length === 0 && (
             <li className="px-3 py-2 text-sm text-ink-400">
-              {searching ? "Suche …" : "Kein Ort gefunden"}
+              {searching ? tr("Suche …") : tr("Kein Ort gefunden")}
             </li>
           )}
           {suggestions.map((o) => (
@@ -293,7 +304,7 @@ function OriginField({
               >
                 <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-300" />
                 <span className="truncate">
-                  {o.name}
+                  {tr(o.name)}
                   {o.detail && <span className="ml-1.5 text-xs font-normal text-ink-400">{o.detail}</span>}
                 </span>
               </button>
@@ -312,8 +323,10 @@ export default function FilterPanel({
   onReset,
   onNotify,
 }: FilterPanelProps) {
+  useI18n(); // bei Sprach-/Einheitenwechsel neu zeichnen
   const today = todayISO();
   const lastDay = lastForecastISO();
+  const profileId = activeProfile(filters);
 
   const choosePreset = (preset: DatePreset) => {
     if (preset === "custom") onChange({ datePreset: "custom" });
@@ -322,19 +335,45 @@ export default function FilterPanel({
 
   return (
     <div className="flex flex-col gap-3 p-3 sm:p-4">
+      {/* Aktivitäts-Profile */}
+      <Section icon={<Sparkles className="h-4 w-4" />} title="Was hast du vor?">
+        <div className="grid grid-cols-3 gap-2">
+          {PROFILES.map((p) => {
+            const active = profileId === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onChange(p.build())}
+                className={`flex flex-col items-center gap-0.5 rounded-xl border px-1 py-2 text-[12px] font-medium leading-tight transition ${
+                  active
+                    ? "border-sun-500 bg-sun-50 text-sun-800 shadow-soft"
+                    : "border-ink-200 bg-white text-ink-700 hover:border-sun-400"
+                }`}
+              >
+                <span className="text-lg leading-none">{p.emoji}</span>
+                {tr(p.label)}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-[11px] text-ink-400">{tr("Setzt passende Wetter-Filter – danach frei anpassbar.")}</p>
+      </Section>
+
       {/* Standort & Radius */}
       <Section icon={<MapPin className="h-4 w-4" />} title="Standort & Radius">
         <OriginField origin={filters.origin} onSelect={(origin) => onChange({ origin })} onNotify={onNotify} />
         <div className="mt-4">
           <RangeField
-            label="Suchradius"
-            valueLabel={`${filters.radiusKm} km`}
+            label={tr("Suchradius")}
+            valueLabel={fmtDist(filters.radiusKm)}
             min={RADIUS_MIN}
             max={RADIUS_MAX}
             step={RADIUS_STEP}
             value={filters.radiusKm}
-            minLabel="50 km"
-            maxLabel="500 km"
+            minLabel={fmtDist(RADIUS_MIN)}
+            maxLabel={fmtDist(RADIUS_MAX)}
             onChange={(radiusKm) => onChange({ radiusKm })}
           />
         </div>
@@ -365,7 +404,7 @@ export default function FilterPanel({
                     : "border-ink-200 bg-white text-ink-700 hover:border-sun-400"
                 }`}
               >
-                {p.label}
+                {tr(p.label)}
               </button>
             );
           })}
@@ -373,7 +412,7 @@ export default function FilterPanel({
         {filters.datePreset === "custom" && (
           <div className="mt-3 grid grid-cols-2 gap-2 animate-fade-in">
             <label className="text-xs text-ink-500">
-              Von
+              {tr("Von")}
               <input
                 type="date"
                 min={today}
@@ -391,7 +430,7 @@ export default function FilterPanel({
               />
             </label>
             <label className="text-xs text-ink-500">
-              Bis
+              {tr("Bis")}
               <input
                 type="date"
                 min={filters.startDate}
@@ -409,7 +448,7 @@ export default function FilterPanel({
               />
             </label>
             <p className="col-span-2 text-[11px] text-ink-400">
-              Prognosen sind für die nächsten 14 Tage verfügbar (bis {addDays(today, 13).split("-").reverse().join(".")}).
+              {tr("Prognosen sind für die nächsten 16 Tage verfügbar (bis {date}).", { date: formatDate(addDays(today, 15)) })}
             </p>
           </div>
         )}
@@ -420,11 +459,11 @@ export default function FilterPanel({
         <div className="flex flex-col gap-5">
           <div>
             <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-ink-500">
-              <Thermometer className="h-3.5 w-3.5" /> Temperatur
+              <Thermometer className="h-3.5 w-3.5" /> {tr("Temperatur")}
             </div>
             <RangeField
-              label="Mindestens (Tageshöchstwert)"
-              valueLabel={`${filters.minTemp} °C`}
+              label={tr("Mindestens (Tageshöchstwert)")}
+              valueLabel={`≥ ${fmtTempSpaced(filters.minTemp)}`}
               hint={tempLabel(filters.minTemp)}
               min={TEMP_MIN}
               max={TEMP_MAX}
@@ -437,9 +476,9 @@ export default function FilterPanel({
 
           <div>
             <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-ink-500">
-              <CloudRain className="h-3.5 w-3.5" /> Niederschlag
+              <CloudRain className="h-3.5 w-3.5" /> {tr("Niederschlag")}
             </div>
-            <div className="grid grid-cols-3 gap-1 rounded-xl bg-ink-100 p-1" role="radiogroup" aria-label="Niederschlag">
+            <div className="grid grid-cols-3 gap-1 rounded-xl bg-ink-100 p-1" role="radiogroup" aria-label={tr("Niederschlag")}>
               {PRECIP_OPTIONS.map((opt) => {
                 const active = filters.precipMode === opt.key;
                 return (
@@ -453,8 +492,8 @@ export default function FilterPanel({
                       active ? "bg-white text-ink-900 shadow-soft" : "text-ink-500 hover:text-ink-800"
                     }`}
                   >
-                    <span className="block text-[12.5px] font-semibold leading-tight">{opt.label}</span>
-                    <span className="block text-[11px] text-ink-400">{opt.sub}</span>
+                    <span className="block text-[12.5px] font-semibold leading-tight">{tr(opt.label)}</span>
+                    <span className="block text-[11px] text-ink-400">{opt.key === "almost" ? `≤ ${fmtPrecip(1)}` : opt.key === "dry" ? fmtPrecip(0) : tr(opt.sub)}</span>
                   </button>
                 );
               })}
@@ -466,8 +505,8 @@ export default function FilterPanel({
               <Wind className="h-3.5 w-3.5" /> Wind
             </div>
             <RangeField
-              label="Maximal"
-              valueLabel={`${filters.maxWind} km/h`}
+              label={tr("Maximal")}
+              valueLabel={fmtSpeed(filters.maxWind)}
               hint={windLabel(filters.maxWind)}
               min={WIND_MIN}
               max={WIND_MAX}
@@ -480,12 +519,12 @@ export default function FilterPanel({
 
           <div>
             <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-ink-500">
-              <Sun className="h-3.5 w-3.5" /> Sonnenstunden
+              <Sun className="h-3.5 w-3.5" /> {tr("Sonnenstunden")}
             </div>
             <RangeField
-              label="Mindestens pro Tag"
-              valueLabel={`${filters.minSun} Std.`}
-              hint={filters.minSun === 0 ? "Egal" : undefined}
+              label={tr("Mindestens pro Tag")}
+              valueLabel={tr("{h} Std.", { h: filters.minSun })}
+              hint={filters.minSun === 0 ? tr("Egal") : undefined}
               min={0}
               max={SUN_MAX}
               value={filters.minSun}
@@ -493,9 +532,39 @@ export default function FilterPanel({
               onChange={(minSun) => onChange({ minSun })}
             />
           </div>
+
+          <div>
+            <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-ink-500">
+              <Sparkles className="h-3.5 w-3.5" /> {tr("Wie genau muss es passen?")}
+            </div>
+            <div className="grid grid-cols-3 gap-1 rounded-xl bg-ink-100 p-1" role="radiogroup" aria-label={tr("Wie genau muss es passen?")}>
+              {TOLERANCE_OPTIONS.map((opt) => {
+                const active = filters.tolerance === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => onChange({ tolerance: opt.key })}
+                    className={`rounded-lg px-1 py-1.5 text-center transition ${
+                      active ? "bg-white text-ink-900 shadow-soft" : "text-ink-500 hover:text-ink-800"
+                    }`}
+                  >
+                    <span className="block text-[12.5px] font-semibold leading-tight">{tr(opt.label)}</span>
+                    <span className="block text-[10.5px] leading-tight text-ink-400">{tr(opt.sub)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
         <p className="mt-4 rounded-lg bg-sun-50 px-3 py-2 text-[11.5px] leading-snug text-sun-800">
-          Gilt für <strong>jeden einzelnen Tag</strong> im gewählten Zeitraum.
+          {filters.tolerance === 0
+            ? tr("Gilt für jeden einzelnen Tag im gewählten Zeitraum.")
+            : filters.tolerance === 1
+              ? tr("Jeder Tag darf knapp abweichen (z. B. 2 °C kälter). Volle Treffer stehen oben.")
+              : tr("Größerer Spielraum, und bei längeren Zeiträumen darf ein Tag ganz abweichen.")}
         </p>
       </Section>
 
@@ -516,7 +585,7 @@ export default function FilterPanel({
                     : "border-ink-200 bg-white text-ink-700 hover:border-sun-400"
                 }`}
               >
-                {c.label}
+                {tr(c.label)}
               </button>
             );
           })}
@@ -525,14 +594,14 @@ export default function FilterPanel({
 
       <div className="flex items-center justify-between px-1 pb-2 text-sm">
         <span className="font-medium text-ink-600">
-          {resultCount === 0 ? "Keine Treffer" : `${resultCount} Treffer`}
+          {resultCount === 0 ? tr("Keine Treffer") : tr("{n} Treffer", { n: resultCount })}
         </span>
         <button
           type="button"
           onClick={onReset}
           className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-ink-500 transition hover:bg-ink-100 hover:text-ink-800"
         >
-          <RotateCcw className="h-3.5 w-3.5" /> Filter zurücksetzen
+          <RotateCcw className="h-3.5 w-3.5" /> {tr("Filter zurücksetzen")}
         </button>
       </div>
     </div>
