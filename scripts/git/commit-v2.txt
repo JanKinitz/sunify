@@ -1,10 +1,9 @@
-Sunify 2.0: Startleiste, Update-Hinweis und Testbibliothek
+Tests: Korrekturen nach dem ersten Lauf, Antwortzeit-Messung
 
-- Startort und Umkreis als erste Funktion in der Top-Bar, Freitext-Leiste entfernt
-- Nach einer Veroeffentlichung erkennt die App die neue Version und laedt neu
-  (im Hintergrund still, sonst mit Hinweis "Aktualisieren")
-- Testbibliothek (Playwright, e2e/TESTFAELLE.md): 34 Testfaelle in Desktop-,
-  Android- und iPhone-Ansicht, laeuft nach jeder Veroeffentlichung automatisch
+- E1/E2: Sprach- und Einheitenschalter eindeutig ansprechen
+- G7 neu: Antwortzeit der breiten Suche, Laufzeiten je Abfrageschritt
+  (meta.timings in /api/search)
+- Zeitlimits fuer langsame Suchen erhoeht
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

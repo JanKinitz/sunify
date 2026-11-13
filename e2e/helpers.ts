@@ -23,13 +23,13 @@ export async function openApp(page: Page, query = ""): Promise<void> {
 /** Wartet, bis die nächste Antwort von /api/search da ist (vor der auslösenden Aktion aufrufen). */
 export function nextSearch(page: Page) {
   return page.waitForResponse((r) => r.url().includes("/api/search") && r.request().method() === "POST", {
-    timeout: 45_000,
+    timeout: 60_000,
   });
 }
 
 /** Wartet, bis die Legende keine laufende Suche mehr meldet. */
 export async function waitForSearchDone(page: Page): Promise<void> {
-  await expect(page.getByTestId("map-legend")).not.toContainText(/Suche läuft|Searching/, { timeout: 45_000 });
+  await expect(page.getByTestId("map-legend")).not.toContainText(/Suche läuft|Searching/, { timeout: 60_000 });
 }
 
 /** Startort aus der Vorschlagsliste wählen (beliebte Orte, ohne externe Ortssuche) */

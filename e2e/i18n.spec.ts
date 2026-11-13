@@ -14,7 +14,7 @@ test.describe("E Sprache & Einheiten", () => {
     await waitForSearchDone(page);
     const area = await settings(page);
     const searched = nextSearch(page);
-    await area.getByRole("radio", { name: "EN" }).click();
+    await area.getByRole("radio", { name: "EN", exact: true }).click();
     await searched; // Sprachwechsel lädt die Ergebnisse neu (Ortsnamen in der neuen Sprache)
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await closeFilters(page);
@@ -26,7 +26,7 @@ test.describe("E Sprache & Einheiten", () => {
     await openApp(page, BROAD_SEARCH);
     await waitForSearchDone(page);
     const area = await settings(page);
-    await area.getByRole("radio", { name: "°F" }).click();
+    await area.getByRole("radio", { name: "°F", exact: true }).click();
     await closeFilters(page);
     await expect(page.getByTitle(/Suchradius|Search radius/)).toContainText(/mi/);
     await expect(page.locator(".sunify-pill").first()).toContainText("°F");

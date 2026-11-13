@@ -173,6 +173,14 @@ function toDaily(row: any) {
 
 export async function runSearch(db: Queryable, r: SearchRequest) {
   const started = Date.now();
+  // Laufzeiten der einzelnen Abfragen (ms) – stehen in meta.timings, für Tests und Fehlersuche
+  const timings: Record<string, number> = {};
+  let last = started;
+  const lap = (step: string) => {
+    const now = Date.now();
+    timings[step] = now - last;
+    last = now;
+  };
 
   // 1) Treffer (die Datenbank sortiert: volle Treffer, Übereinstimmung, Tourismus-Score)
   const matches = await db.query(SEARCH_SQL, searchParams(r, r.limit));
@@ -183,6 +191,7 @@ export async function runSearch(db: Queryable, r: SearchRequest) {
   }));
   const matchIds = matchRows.map((m) => m.id);
   const totalMatches = Number(matches.rows[0]?.total_count ?? 0);
+  lap("search");
 
   // 2) Bekannte Orte im Radius, die keine Treffer sind (gedimmte Punkte auf der Karte)
   const others = await db.query(
@@ -196,6 +205,7 @@ export async function runSearch(db: Queryable, r: SearchRequest) {
     [r.originLat, r.originLon, r.radiusKm * 1000, OTHERS_MIN_SCORE, matchIds, OTHERS_LIMIT]
   );
   const otherIds: number[] = others.rows.map((row) => Number(row.destination_id));
+  lap("others");
 
   // 3) Stammdaten (Treffer, Nicht-Treffer, Merkliste) inkl. Höhenkorrektur je Ort
   const allIds = [...new Set([...matchIds, ...otherIds, ...r.favoriteIds])];
@@ -230,6 +240,8 @@ export async function runSearch(db: Queryable, r: SearchRequest) {
       : null,
   }));
 
+  lap("destinations");
+
   // 4) Tageswerte je Rasterpunkt (Timeline, Tages-Nachweis)
   const gridIds = [...new Set(destinations.map((d) => d.gridId))];
   const fc = await db.query(
@@ -239,12 +251,15 @@ export async function runSearch(db: Queryable, r: SearchRequest) {
   );
   const forecasts: Record<string, ReturnType<typeof toDaily>> = {};
   for (const row of fc.rows) forecasts[String(row.grid_id)] = toDaily(row);
+  lap("forecasts");
 
   // 5) Fast-Treffer nur bei leerem Ergebnis
   const relaxations = totalMatches === 0 ? await findRelaxations(db, r) : [];
+  lap("relaxations");
 
   const updated = await db.query("SELECT MAX(updated_at) AS t FROM weather_forecasts");
   const t = updated.rows[0]?.t;
+  lap("updated");
 
   return {
     matches: matchRows,
@@ -253,6 +268,6 @@ export async function runSearch(db: Queryable, r: SearchRequest) {
     destinations,
     forecasts,
     relaxations,
-    meta: { tookMs: Date.now() - started, weatherUpdatedAt: t ? new Date(t).toISOString() : null },
+    meta: { tookMs: Date.now() - started, timings, weatherUpdatedAt: t ? new Date(t).toISOString() : null },
   };
 }

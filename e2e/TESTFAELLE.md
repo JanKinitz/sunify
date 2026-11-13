@@ -84,9 +84,11 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | G4 | Breite Suche | keine Fehler in der Browser-Konsole (außer Kartenkacheln/Fotos fremder Server) |
 | G5 | Server meldet neuere Version | Hinweis „Eine neue Version von Sunify ist da.“ mit „Aktualisieren“ |
 | G6 | Quellenangaben | Open-Meteo, NOAA GFS, GeoNames, Wikimedia Commons, OpenStreetMap unter der Liste |
+| G7 | Antwortzeit: breite Suche (München, 300 km) dreimal direkt an `/api/search` (nur Desktop-Lauf) | schnellste Antwort unter 8 s; Laufzeiten je Abfrageschritt stehen im Bericht |
 
 ## Änderungen
 
 | Datum | Version | Änderung |
 |---|---|---|
 | 13.11.2026 | 2.0 | Testbibliothek angelegt (A1–G6) |
+| 13.11.2026 | 2.0 | E1/E2: Sprach-/Einheitenschalter eindeutig ansprechen; G7 Antwortzeit neu; Zeitlimits für langsame Suchen erhöht |

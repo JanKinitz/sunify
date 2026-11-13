@@ -64,4 +64,37 @@ test.describe("G Technik", () => {
     }
     if (isMobile(page)) await page.getByTestId("show-map").click();
   });
+
+  test("G7 Antwortzeit der Suche (300 km, alles „egal“) unter 8 Sekunden", async ({ request }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "Server-Messung einmal pro Lauf genügt");
+    const today = new Date();
+    const day = (offset: number) => new Date(today.getTime() + offset * 86_400_000).toISOString().slice(0, 10);
+    const body = {
+      originLat: 48.1372,
+      originLon: 11.5756,
+      radiusKm: 300,
+      startDate: day(1),
+      endDate: day(2),
+      criteria: { minTempMax: -60, maxPrecipitationSum: null, maxWindSpeed: 500, minSunshineHours: 0 },
+      tolerance: 0,
+      category: "all",
+      limit: 100,
+      favoriteIds: [],
+    };
+    const durations: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      const started = Date.now();
+      const res = await request.post("/api/search", { data: body, timeout: 60_000 });
+      durations.push(Date.now() - started);
+      expect(res.ok()).toBeTruthy();
+      const json = await res.json();
+      testInfo.annotations.push({
+        type: `Lauf ${i + 1}`,
+        description: `gesamt ${durations[i]} ms, Server ${json.meta?.tookMs} ms, Schritte ${JSON.stringify(json.meta?.timings ?? {})}, Treffer ${json.totalMatches}`,
+      });
+    }
+    console.log("G7 Antwortzeiten:", testInfo.annotations.map((a) => `${a.type}: ${a.description}`).join(" | "));
+    const best = Math.min(...durations);
+    expect(best, `schnellste von 3 Suchen: ${best} ms`).toBeLessThan(8000);
+  });
 });

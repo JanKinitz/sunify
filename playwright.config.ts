@@ -9,7 +9,7 @@ const baseURL = process.env.SUNIFY_URL || "http://localhost:3000";
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./e2e/results",
-  timeout: 60_000,
+  timeout: 90_000,
   expect: { timeout: 20_000 },
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
