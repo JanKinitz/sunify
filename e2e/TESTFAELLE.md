@@ -102,3 +102,4 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | 13.11.2026 | 2.0 | Fehler: Tage in fernen Zeitzonen um einen Tag verschoben (Christchurch ohne Treffer). A5 verschärft, G8 neu; Unit-Tests der Datenaufbereitung in `pipeline/tests/` |
 | 13.11.2026 | 2.0 | Fast-Treffer-Grund (C7), Unsicherheit ab Tag 8 (C8), Vor-/Folgetag immer sichtbar (C9), Prozent auf Pills (D4), graue Punkte korrekt (G9) |
 | 13.11.2026 | 2.0 | C7/D4: Suche passt sich dem aktuellen Wetter an, damit es sicher Fast-Treffer gibt (vorher übersprungen) |
+| 13.11.2026 | 2.0 | C7/D4: Schwelle wird am Server ausprobiert (vorher geschätzt, ohne Fast-Treffer); Protokoll der Versuche im Testlauf |

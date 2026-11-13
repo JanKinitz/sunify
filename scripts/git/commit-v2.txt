@@ -1,8 +1,7 @@
-Tests C7/D4: Suche mit sicheren Fast-Treffern
+Tests C7/D4: Fast-Treffer-Suche am Server ermitteln
 
-Bei 300 km fuellten volle Treffer alle 100 geladenen Plaetze, Fast-Treffer kamen
-gar nicht in die Liste. Jetzt 50 km um Muenchen, Mindesttemperatur 1 Grad ueber
-dem waermsten Ort von morgen, "Etwas flexibel".
+Die geschaetzte Schwelle ergab weiterhin keine Fast-Treffer. Der Test probiert
+die Mindesttemperatur jetzt direkt an /api/search aus und protokolliert die Versuche.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

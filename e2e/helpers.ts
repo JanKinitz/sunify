@@ -84,33 +84,51 @@ export function berlinDate(days = 0): string {
 }
 
 /**
- * Suche, die sicher Fast-Treffer liefert – passend zum aktuellen Wetter: Die Mindesttemperatur wird so gewählt,
- * dass ein Teil der Orte morgen knapp (bis 2 °C) darunter liegt; mit „Etwas flexibel“ sind das Fast-Treffer.
+ * Suche, die sicher Fast-Treffer liefert – passend zum aktuellen Wetter: 50 km um München, „Etwas flexibel“.
+ * Die Mindesttemperatur wird beim Server ausprobiert (vom Median bis über den wärmsten Ort von morgen),
+ * bis unter den geladenen Ergebnissen Fast-Treffer sind. Bei großem Radius füllen volle Treffer sonst alle Plätze.
  */
 export async function nearSearchQuery(request: APIRequestContext): Promise<string> {
-  const res = await request.post("/api/search", {
-    timeout: 60_000,
-    data: {
-      originLat: 48.1372,
-      originLon: 11.5756,
-      radiusKm: 300,
-      startDate: berlinDate(1),
-      endDate: berlinDate(1),
-      criteria: { minTempMax: -60, maxPrecipitationSum: null, maxWindSpeed: 500, minSunshineHours: 0 },
-      tolerance: 0,
-      category: "all",
-      limit: 100,
-      favoriteIds: [],
-    },
-  });
-  const json = await res.json();
+  const post = (minTemp: number, tolerance: number) =>
+    request
+      .post("/api/search", {
+        timeout: 60_000,
+        data: {
+          originLat: 48.1372,
+          originLon: 11.5756,
+          radiusKm: 50,
+          startDate: berlinDate(1),
+          endDate: berlinDate(1),
+          criteria: { minTempMax: minTemp, maxPrecipitationSum: null, maxWindSpeed: 500, minSunshineHours: 0 },
+          tolerance,
+          category: "all",
+          limit: 100,
+          favoriteIds: [],
+        },
+      })
+      .then((r) => r.json());
+
+  const all = await post(-60, 0);
   const day = berlinDate(1);
   const temps: number[] = [];
-  for (const d of json.destinations as { gridId: number; tempCorrection: number }[]) {
-    const f = (json.forecasts[String(d.gridId)] ?? []).find((x: { date: string }) => x.date === day);
-    if (f) temps.push(f.tempMax + d.tempCorrection);
+  for (const d of all.destinations as { gridId: number; tempCorrection: number }[]) {
+    const f = (all.forecasts[String(d.gridId)] ?? []).find((x: { date: string }) => x.date === day);
+    if (f && Number.isFinite(f.tempMax)) temps.push(f.tempMax + (d.tempCorrection ?? 0));
   }
   temps.sort((a, b) => a - b);
-  const threshold = Math.ceil(temps[Math.floor(temps.length * 0.6)] ?? 10);
-  return `o=muenchen&r=300&d=tomorrow&t=${threshold}&p=any&w=60&sun=0&c=all&tol=1`;
+  const tried: string[] = [];
+  if (temps.length) {
+    const from = Math.round(temps[Math.floor(temps.length / 2)]);
+    const to = Math.ceil(temps[temps.length - 1]) + 2;
+    for (let t = from; t <= to; t++) {
+      const res = await post(t, 1);
+      const near = (res.matches as { strict: boolean }[]).filter((m) => !m.strict).length;
+      tried.push(`${t} °C: ${res.matches.length} Treffer, davon ${near} Fast-Treffer`);
+      if (near > 0) {
+        console.log(`Fast-Treffer-Suche: ${tried.join(" | ")}`);
+        return `o=muenchen&r=50&d=tomorrow&t=${t}&p=any&w=60&sun=0&c=all&tol=1`;
+      }
+    }
+  }
+  throw new Error(`Keine Suche mit Fast-Treffern gefunden (${temps.length} Orte, ${tried.join(" | ") || "nichts probiert"})`);
 }
