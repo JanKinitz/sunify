@@ -1,9 +1,8 @@
-Tests C7/D4 wetterunabhaengig, Datenjobs spielen Migrationen ein
+Tests C7/D4: Suche mit sicheren Fast-Treffern
 
-- C7/D4 waehlen die Mindesttemperatur passend zum aktuellen Wetter, damit es
-  sicher Fast-Treffer gibt (wurden bisher uebersprungen)
-- GFS-/Open-Meteo-Jobs fuehren vor dem Abruf die Migrationen aus; der GFS-Lauf
-  nach dem letzten Hochladen scheiterte, weil er vor der neuen Spalte tz startete
+Bei 300 km fuellten volle Treffer alle 100 geladenen Plaetze, Fast-Treffer kamen
+gar nicht in die Liste. Jetzt 50 km um Muenchen, Mindesttemperatur 1 Grad ueber
+dem waermsten Ort von morgen, "Etwas flexibel".
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J
