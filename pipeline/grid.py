@@ -30,6 +30,7 @@ class GridPoint:
     utc_offset: int
     member_index: list[int]  # Indizes der zugeordneten Orte
     max_score: int = 0
+    tz: str | None = None  # IANA-Zeitzone (häufigste der Orte), für Sommer-/Winterzeit
 
 
 def _block_sizes(lats, lons, elevs) -> dict[tuple[int, int], float]:
@@ -57,7 +58,7 @@ def _snap(value: float) -> float:
     return round(value * 4) / 4
 
 
-def build_grid(lats, lons, elevs, pops, countries, offsets, scores) -> tuple[list[GridPoint], list[int]]:
+def build_grid(lats, lons, elevs, pops, countries, offsets, scores, zones=None) -> tuple[list[GridPoint], list[int]]:
     """Liefert (Rasterpunkte, Rasterindex je Ort)."""
     n = len(lats)
     sizes = _block_sizes(lats, lons, elevs)
@@ -92,6 +93,8 @@ def build_grid(lats, lons, elevs, pops, countries, offsets, scores) -> tuple[lis
         gp.country = Counter(countries[i] for i in gp.member_index).most_common(1)[0][0]
         offs = sorted(offsets[i] for i in gp.member_index)
         gp.utc_offset = offs[len(offs) // 2]
+        if zones is not None:
+            gp.tz = Counter(zones[i] for i in gp.member_index).most_common(1)[0][0] or None
         gp.max_score = max(scores[i] for i in gp.member_index)
         for i in gp.member_index:
             assignment[i] = gi

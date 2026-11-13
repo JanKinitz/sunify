@@ -95,9 +95,9 @@ function pillIcon(result: SearchResult, active: boolean, fav: boolean): L.DivIco
     iconAnchor: [0, 0],
     html: `<div class="${classes}"${title ? ` title="${escapeHtml(title)}"` : ""}><span>${emoji}</span><span>${tempValue(
       result.avgTempMax
-    )}${tempUnit()}</span><span class="sep">|</span><span class="name">${escapeHtml(
-      result.destination.name
-    )}</span></div>`,
+    )}${tempUnit()}</span>${
+      near ? `<span class="pct">${result.matchPct ?? 0} %</span>` : ""
+    }<span class="sep">|</span><span class="name">${escapeHtml(result.destination.name)}</span></div>`,
   });
 }
 

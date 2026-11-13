@@ -9,7 +9,7 @@ import { groupResults } from "@/lib/grouping";
 import { fmtDist, fmtPrecip, fmtSpeed, fmtTemp, formatNumber, tr, trn } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-react";
 import { commonsPage, commonsThumb } from "@/lib/photos";
-import { checkDay } from "@/lib/search";
+import { checkDay, isUncertainDay, nearMissReasons } from "@/lib/search";
 import type { Destination, Filters, SearchResult, SortKey } from "@/lib/types";
 import { weatherEmoji } from "@/lib/weather";
 
@@ -143,6 +143,7 @@ export function ResultCard({
   const visibleDays = result.days.slice(0, 4);
   const hiddenDays = result.days.length - visibleDays.length;
   const strict = result.strict !== false;
+  const reasons = strict ? [] : nearMissReasons(result, filters);
 
   return (
     <article
@@ -199,18 +200,27 @@ export function ResultCard({
             Ø {fmtTemp(result.avgTempMax)} | {fmtPrecip(result.totalPrecip)} {tr("Regen")} | {fmtSpeed(result.maxWind)} {tr("Wind")} | Ø{" "}
             {tr("{h} Std. Sonne", { h: formatNumber(result.avgSunshine) })}
           </div>
+          {reasons.length > 0 && (
+            <ul data-testid="near-reasons" className="mt-1 space-y-0.5 text-[12px] font-medium text-amber-800">
+              {reasons.map((reason) => (
+                <li key={reason}>≈ {reason}</li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* Mini-Tagesvorschau (gelb umrandet: Tag weicht im Toleranzbereich ab) */}
         <div className="mt-3 flex flex-wrap gap-1.5">
           {visibleDays.map((day) => {
             const ok = checkDay(day, filters).allOk;
+            const uncertain = isUncertainDay(day.date);
             return (
               <span
                 key={day.date}
+                title={uncertain ? tr("Trend – ab dem 8. Tag ist die Prognose noch unsicher") : undefined}
                 className={`rounded-lg border px-2 py-1 text-[12.5px] tabular-nums text-ink-800 ${
                   ok ? "border-ink-100 bg-ink-50" : "border-amber-300 bg-amber-50"
-                }`}
+                } ${uncertain ? "border-dashed" : ""}`}
               >
                 <span className="font-semibold">{weekdayShort(day.date)}:</span> {weatherEmoji(day.weatherCode)}{" "}
                 {fmtTemp(day.tempMax)}

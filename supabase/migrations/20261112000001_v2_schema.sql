@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS weather_grid (
   utc_offset   SMALLINT NOT NULL DEFAULT 0    -- grobe Zeitzone (Stunden) für die Tagesgrenzen der GFS-Daten
 );
 CREATE INDEX IF NOT EXISTS idx_weather_grid_geom ON weather_grid USING GIST (geom);
+-- IANA-Zeitzone je Rasterpunkt: Tagesgrenzen der GFS-Werte saisongenau (Sommer-/Winterzeit) je Lauf.
+-- Fehlt sie (ältere Datenbank), füllt der GFS-Job sie einmalig aus GeoNames nach.
+ALTER TABLE weather_grid ADD COLUMN IF NOT EXISTS tz VARCHAR(64);
 
 -- 2. Prognosen: eine Zeile pro Rasterpunkt, Tageswerte als Arrays ab start_date (bis 16 Tage).
 CREATE TABLE IF NOT EXISTS weather_forecasts (

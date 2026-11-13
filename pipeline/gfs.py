@@ -81,8 +81,34 @@ def load_points(lats: np.ndarray, lons: np.ndarray, log=print) -> tuple[datetime
     return init_dt, lead_hours, out
 
 
-def daily_for_points(lats: np.ndarray, lons: np.ndarray, utc_offsets: np.ndarray, log=print) -> tuple[datetime, list[Daily | None]]:
+def offsets_at(init: datetime, zones: list[str | None], fallback: np.ndarray) -> np.ndarray:
+    """UTC-Versatz je Punkt zum Zeitpunkt des Laufs (Sommer-/Winterzeit); ohne Zeitzone der gespeicherte Wert."""
+    from zoneinfo import ZoneInfo
+
+    from .geonames import utc_offset_hours
+
+    valid: dict[str, bool] = {}
+
+    def known(zone: str) -> bool:
+        if zone not in valid:
+            try:
+                ZoneInfo(zone)
+                valid[zone] = True
+            except Exception:
+                valid[zone] = False
+        return valid[zone]
+
+    return np.array(
+        [utc_offset_hours(z, init) if z and known(z) else int(f) for z, f in zip(zones, fallback)], dtype=np.int32
+    )
+
+
+def daily_for_points(
+    lats: np.ndarray, lons: np.ndarray, utc_offsets: np.ndarray, log=print, zones: list[str | None] | None = None
+) -> tuple[datetime, list[Daily | None]]:
     init, lead_hours, v = load_points(lats, lons, log)
+    if zones is not None:
+        utc_offsets = offsets_at(init, zones, utc_offsets)
     daily = aggregate_gfs(
         init, lead_hours, utc_offsets, v["tmax"], v["tmin"], v["prate"], v["u"], v["v"], v["cloud"], v["sw"], v["snow"]
     )

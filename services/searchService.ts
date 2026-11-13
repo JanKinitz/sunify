@@ -32,7 +32,7 @@ const RADIUS_MIN = 10;
 const RADIUS_MAX = 500;
 const LIMIT_MAX = 100;
 const OTHERS_LIMIT = 40;
-const OTHERS_MIN_SCORE = 50;
+const OTHERS_MIN_SCORE = 35;
 
 // ---------------------------------------------------------------------------
 // Validierung
@@ -99,15 +99,35 @@ export function parseSearchRequest(body: unknown): { ok: true; value: SearchRequ
 // ---------------------------------------------------------------------------
 
 const SEARCH_SQL = `SELECT * FROM search_destinations_v2(
-  $1::float8, $2::float8, $3::float8, $4::date, $5::date, $6::real, $7::real, $8::real, $9::real, $10::smallint, $11::text[], $12::int)`;
+  $1::float8, $2::float8, $3::float8, $4::date, $5::date, $6::real, $7::real, $8::real, $9::real, $10::smallint,
+  $11::text[], $12::int, $13::int, $14::smallint)`;
 
-function searchParams(r: SearchRequest, limit: number): unknown[] {
+/** others: Anzahl Nicht-Treffer (graue Punkte), die im selben Durchgang mitkommen */
+function searchParams(r: SearchRequest, limit: number, others = 0): unknown[] {
   return [
     r.originLat, r.originLon, r.radiusKm * 1000, r.startDate, r.endDate,
     r.minTemp, r.maxPrecip, r.maxWind, r.minSun, r.tolerance,
-    r.category === "all" ? null : CATEGORY_TAGS[r.category], limit,
+    r.category === "all" ? null : CATEGORY_TAGS[r.category], limit, others, OTHERS_MIN_SCORE,
   ];
 }
+
+// Stammdaten, Tageswerte und Datenstand in EINER Abfrage (spart Wege zwischen Server und Datenbank)
+const DETAILS_SQL = `
+WITH ids AS (SELECT unnest($1::int[]) AS id),
+d AS (
+  SELECT d.destination_id, d.name, d.name_de, d.name_en, d.country_code, d.admin_region, d.admin_region_de,
+         d.admin_region_en, d.lat, d.lon, d.elevation, d.population, d.tourism_score, d.tags, d.grid_id,
+         d.image_file, d.image_author, d.image_license,
+         LEAST(8, GREATEST(-8, (COALESCE(g.elevation, d.elevation, 0) - COALESCE(d.elevation, g.elevation, 0)) * 0.0065)) AS corr
+  FROM destinations d JOIN weather_grid g ON g.grid_id = d.grid_id
+  WHERE d.destination_id IN (SELECT id FROM ids)
+)
+SELECT
+  (SELECT COALESCE(json_agg(d), '[]'::json) FROM d) AS destinations,
+  (SELECT COALESCE(json_agg(f), '[]'::json) FROM (
+     SELECT grid_id, start_date::text AS start_date, temp_max, temp_min, precip, precip_prob, wind_max, sunshine, weather_code
+     FROM weather_forecasts WHERE grid_id IN (SELECT DISTINCT grid_id FROM d)) f) AS forecasts,
+  (SELECT MAX(updated_at) FROM weather_forecasts) AS updated`;
 
 async function countMatches(db: Queryable, r: SearchRequest): Promise<number> {
   const { rows } = await db.query(SEARCH_SQL, searchParams(r, 1));
@@ -182,43 +202,26 @@ export async function runSearch(db: Queryable, r: SearchRequest) {
     last = now;
   };
 
-  // 1) Treffer (die Datenbank sortiert: volle Treffer, Übereinstimmung, Tourismus-Score)
-  const matches = await db.query(SEARCH_SQL, searchParams(r, r.limit));
-  const matchRows = matches.rows.map((row) => ({
+  // 1) Treffer (sortiert: volle Treffer, Übereinstimmung, Tourismus-Score) und – im selben Durchgang –
+  //    gleichmäßig verteilte bekannte Orte, deren Wetter NICHT passt (graue Punkte auf der Karte)
+  const result = await db.query(SEARCH_SQL, searchParams(r, r.limit, OTHERS_LIMIT));
+  const isMatch = (row: any) => row.is_match === true || row.is_match === "t";
+  const matchRows = result.rows.filter(isMatch).map((row) => ({
     id: Number(row.destination_id),
     pct: Number(row.match_pct),
     strict: row.strict_match === true || row.strict_match === "t",
   }));
   const matchIds = matchRows.map((m) => m.id);
-  const totalMatches = Number(matches.rows[0]?.total_count ?? 0);
+  const otherIds: number[] = result.rows.filter((row) => !isMatch(row)).map((row) => Number(row.destination_id));
+  const totalMatches = Number(result.rows[0]?.total_count ?? 0);
   lap("search");
 
-  // 2) Bekannte Orte im Radius, die keine Treffer sind (gedimmte Punkte auf der Karte)
-  const others = await db.query(
-    `SELECT d.destination_id
-     FROM destinations d
-     WHERE ST_DWithin(d.geom, ST_SetSRID(ST_MakePoint($2::float8, $1::float8), 4326)::GEOGRAPHY, $3::float8)
-       AND d.tourism_score >= $4::int
-       AND d.destination_id <> ALL($5::int[])
-     ORDER BY d.tourism_score DESC, d.population DESC
-     LIMIT $6::int`,
-    [r.originLat, r.originLon, r.radiusKm * 1000, OTHERS_MIN_SCORE, matchIds, OTHERS_LIMIT]
-  );
-  const otherIds: number[] = others.rows.map((row) => Number(row.destination_id));
-  lap("others");
-
-  // 3) Stammdaten (Treffer, Nicht-Treffer, Merkliste) inkl. Höhenkorrektur je Ort
+  // 2) Stammdaten (Treffer, Nicht-Treffer, Merkliste), Tageswerte je Rasterpunkt und Datenstand
   const allIds = [...new Set([...matchIds, ...otherIds, ...r.favoriteIds])];
-  const destRows = await db.query(
-    `SELECT d.destination_id, d.name, d.name_de, d.name_en, d.country_code, d.admin_region, d.admin_region_de,
-            d.admin_region_en, d.lat, d.lon, d.elevation, d.population, d.tourism_score, d.tags, d.grid_id,
-            d.image_file, d.image_author, d.image_license,
-            LEAST(8, GREATEST(-8, (COALESCE(g.elevation, d.elevation, 0) - COALESCE(d.elevation, g.elevation, 0)) * 0.0065)) AS corr
-     FROM destinations d JOIN weather_grid g ON g.grid_id = d.grid_id
-     WHERE d.destination_id = ANY($1::int[])`,
-    [allIds]
-  );
-  const destinations = destRows.rows.map((row) => ({
+  const details = await db.query(DETAILS_SQL, [allIds]);
+  const detailRow = details.rows[0] ?? {};
+  const destRows: any[] = Array.isArray(detailRow.destinations) ? detailRow.destinations : [];
+  const destinations = destRows.map((row) => ({
     id: Number(row.destination_id),
     name: String(row.name),
     nameDe: row.name_de ?? null,
@@ -239,27 +242,15 @@ export async function runSearch(db: Queryable, r: SearchRequest) {
       ? { file: String(row.image_file), author: String(row.image_author ?? ""), license: String(row.image_license ?? "") }
       : null,
   }));
-
-  lap("destinations");
-
-  // 4) Tageswerte je Rasterpunkt (Timeline, Tages-Nachweis)
-  const gridIds = [...new Set(destinations.map((d) => d.gridId))];
-  const fc = await db.query(
-    `SELECT grid_id, start_date::text AS start_date, temp_max, temp_min, precip, precip_prob, wind_max, sunshine, weather_code
-     FROM weather_forecasts WHERE grid_id = ANY($1::int[])`,
-    [gridIds]
-  );
   const forecasts: Record<string, ReturnType<typeof toDaily>> = {};
-  for (const row of fc.rows) forecasts[String(row.grid_id)] = toDaily(row);
-  lap("forecasts");
+  const fcRows: any[] = Array.isArray(detailRow.forecasts) ? detailRow.forecasts : [];
+  for (const row of fcRows) forecasts[String(row.grid_id)] = toDaily(row);
+  const t = detailRow.updated;
+  lap("details");
 
-  // 5) Fast-Treffer nur bei leerem Ergebnis
+  // 3) Fast-Treffer-Vorschläge nur bei leerem Ergebnis
   const relaxations = totalMatches === 0 ? await findRelaxations(db, r) : [];
   lap("relaxations");
-
-  const updated = await db.query("SELECT MAX(updated_at) AS t FROM weather_forecasts");
-  const t = updated.rows[0]?.t;
-  lap("updated");
 
   return {
     matches: matchRows,

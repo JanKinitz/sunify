@@ -39,7 +39,7 @@ import {
   trn,
 } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-react";
-import { checkDay, formatDriveTime, maxPrecipFor } from "@/lib/search";
+import { checkDay, formatDriveTime, isUncertainDay, maxPrecipFor } from "@/lib/search";
 import type { CheckState, DailyForecast, Filters, SearchResult } from "@/lib/types";
 import { tempColor, weatherEmoji, weatherLabel } from "@/lib/weather";
 import {
@@ -162,6 +162,24 @@ export default function DetailDrawer({
   const from = addDays(filters.startDate, -1);
   const to = addDays(filters.endDate, 1);
   const timeline = d.forecasts.filter((f) => f.date >= from && f.date <= to);
+  // Vor- oder Folgetag ohne Daten (z. B. ferne Zeitzonen kurz nach einem Wetterlauf): Platzhalter statt Lücke
+  const missingBefore = !timeline.some((f) => f.date === from);
+  const missingAfter = !timeline.some((f) => f.date === to);
+  const placeholder = (iso: string, label: string) => (
+    <div
+      key={`missing-${iso}`}
+      data-testid="day-missing"
+      className="flex items-center justify-between gap-2 rounded-xl border border-dashed border-ink-200 bg-ink-50/60 p-2.5"
+    >
+      <div>
+        <div className="text-sm font-bold leading-tight text-ink-500">
+          {weekdayShort(iso)}, {formatDayMonth(iso)}
+        </div>
+        <div className="text-[11.5px] text-ink-400">{tr("Für diesen Tag liegen noch keine Wetterdaten vor.")}</div>
+      </div>
+      <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-ink-500">{label}</span>
+    </div>
+  );
   const inRange = (date: string) => date >= filters.startDate && date <= filters.endDate;
   const checks = result.days.map((day) => checkDay(day, filters));
   const passed = checks.filter((c) => c.allOk).length;
@@ -312,6 +330,7 @@ export default function DetailDrawer({
             <TempChart days={timeline} selected={inRange} />
 
             <div className="mt-3 flex flex-col gap-2">
+              {missingBefore && placeholder(from, tr("Vortag"))}
               {timeline.map((day) => {
                 const selected = inRange(day.date);
                 const c = checkDay(day, filters);
@@ -337,7 +356,18 @@ export default function DetailDrawer({
                           <div className="text-sm font-bold leading-tight text-ink-900">
                             {weekdayShort(day.date)}, {formatDayMonth(day.date)}
                           </div>
-                          <div className="text-[11.5px] text-ink-500">{weatherLabel(day.weatherCode)}</div>
+                          <div className="text-[11.5px] text-ink-500">
+                            {weatherLabel(day.weatherCode)}
+                            {isUncertainDay(day.date) && (
+                              <span
+                                data-testid="trend-badge"
+                                title={tr("Ab dem 8. Tag ist die Prognose noch unsicher – kurz vor der Reise nochmal prüfen.")}
+                                className="ml-1.5 rounded bg-ink-100 px-1 py-px text-[10.5px] font-semibold uppercase text-ink-500"
+                              >
+                                {tr("Trend")}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       {selected ? (
@@ -387,6 +417,7 @@ export default function DetailDrawer({
                   </div>
                 );
               })}
+              {missingAfter && placeholder(to, tr("Folgetag"))}
             </div>
             <p className="mt-3 text-[11px] leading-snug text-ink-400">
               {tr("Deine Kriterien")}:{" "}

@@ -155,6 +155,15 @@ body {
   border-color: #f5b301;
   background: #fffbea;
 }
+/* Übereinstimmung der Fast-Treffer direkt auf der Pill (auch auf dem Handy sichtbar) */
+.sunify-pill .pct {
+  border-radius: 9999px;
+  background: #fde68a;
+  color: #78350f;
+  font-size: 0.85em;
+  font-weight: 700;
+  padding: 0 0.4em;
+}
 .sunify-pill.is-fav::after {
   content: "♥";
   color: #e5484d;

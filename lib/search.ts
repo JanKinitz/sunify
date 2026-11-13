@@ -2,7 +2,8 @@
 // Sortierung und Fahrzeit. Die eigentliche Suche läuft in der Datenbank (search_destinations_v2).
 
 import { anyTemp, anyWind, TOLERANCE_SLACK } from "./categories";
-import { tr } from "./i18n";
+import { diffDays, todayISO, weekdayShort } from "./dates";
+import { fmtPrecip, fmtSpeed, fmtTempSpaced, formatNumber, tr } from "./i18n";
 import type {
   CheckState,
   DailyForecast,
@@ -66,6 +67,38 @@ export function checkDay(day: DailyForecast, filters: Filters, tolerance: Tolera
   const sun = state(day.sunshine >= filters.minSun, day.sunshine >= filters.minSun - slack.sun);
   const all = [temp, precip, wind, sun];
   return { day, temp, precip, wind, sun, allOk: all.every((s) => s === "ok"), allNear: all.every((s) => s !== "fail") };
+}
+
+/**
+ * Warum ein Fast-Treffer kein voller Treffer ist – kurze Gründe für die Ergebnisliste,
+ * z. B. „Sa: 19 °C statt mind. 20 °C“. Liefert höchstens `max` Einträge (je abweichendem Tag ein Grund).
+ */
+export function nearMissReasons(result: SearchResult, filters: Filters, max = 2): string[] {
+  const reasons: string[] = [];
+  const maxP = maxPrecipFor(filters.precipMode);
+  for (const day of result.days) {
+    if (reasons.length >= max) break;
+    const c = checkDay(day, filters);
+    if (c.allOk) continue;
+    const wd = weekdayShort(day.date);
+    if (c.temp !== "ok") {
+      reasons.push(tr("{day}: {value} statt mind. {target}", { day: wd, value: fmtTempSpaced(day.tempMax), target: fmtTempSpaced(filters.minTemp) }));
+    } else if (c.precip !== "ok") {
+      reasons.push(tr("{day}: {value} Regen statt max. {target}", { day: wd, value: fmtPrecip(day.precip), target: fmtPrecip(maxP) }));
+    } else if (c.wind !== "ok") {
+      reasons.push(tr("{day}: {value} Wind statt max. {target}", { day: wd, value: fmtSpeed(day.wind), target: fmtSpeed(filters.maxWind) }));
+    } else if (c.sun !== "ok") {
+      reasons.push(tr("{day}: {value} Std. Sonne statt mind. {target}", { day: wd, value: formatNumber(day.sunshine), target: formatNumber(filters.minSun) }));
+    }
+  }
+  return reasons;
+}
+
+/** Ab dem 8. Prognosetag (heute = Tag 1) sind Vorhersagen deutlich unsicherer. */
+export const UNCERTAIN_FROM_DAY = 8;
+
+export function isUncertainDay(iso: string): boolean {
+  return diffDays(todayISO(), iso) >= UNCERTAIN_FROM_DAY - 1;
 }
 
 export function daysInRange(destination: Destination, startDate: string, endDate: string) {

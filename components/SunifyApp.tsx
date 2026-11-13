@@ -4,7 +4,7 @@
 // Favoriten) und verdrahtet die Kern-Screens. Die Daten kommen von POST /api/search.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CloudOff, Heart, List, LoaderCircle, Map as MapIcon, MapPin, Share2, SlidersHorizontal, X } from "lucide-react";
+import { CloudOff, Heart, Info, List, LoaderCircle, Map as MapIcon, MapPin, Share2, SlidersHorizontal, X } from "lucide-react";
 import { fetchSearch, type SearchData } from "@/lib/api";
 import { formatRange, formatWeekdayRange } from "@/lib/dates";
 import { defaultFilters, filtersFromQuery, filtersToQuery } from "@/lib/filters";
@@ -12,7 +12,7 @@ import { groupResults } from "@/lib/grouping";
 import { fmtDist, formatInt, getLocale, tr, trn } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-react";
 import { hasOrigin, originLabel } from "@/lib/origins";
-import { describeDestination, sortResults } from "@/lib/search";
+import { describeDestination, isUncertainDay, sortResults } from "@/lib/search";
 import type { Destination, Filters, SearchResult, SortKey } from "@/lib/types";
 import DetailDrawer from "./DetailDrawer";
 import EmptyState from "./EmptyState";
@@ -355,6 +355,15 @@ export default function SunifyApp() {
     </div>
   ) : (
     <>
+      {isUncertainDay(activeFilters.endDate) && (
+        <p
+          data-testid="uncertainty-hint"
+          className="mb-3 flex items-start gap-2 rounded-xl border border-ink-100 bg-white px-3 py-2 text-[12.5px] leading-snug text-ink-600"
+        >
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-sun-500" />
+          {tr("Ab dem 8. Tag sind Wetterprognosen noch unsicher (gestrichelt markiert). Kurz vor der Reise lohnt sich ein zweiter Blick.")}
+        </p>
+      )}
       <div className={pending ? "pointer-events-none opacity-50 transition-opacity" : "transition-opacity"} aria-busy={pending}>
       {results.length === 0 ? (
         <EmptyState filters={activeFilters} relaxations={relaxations} onApply={update} onReset={reset} />

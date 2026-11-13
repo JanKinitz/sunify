@@ -1,6 +1,6 @@
 // G – Technik, App-Installation, Updates, Datenstand, Quellen (siehe e2e/TESTFAELLE.md)
 import { expect, test } from "@playwright/test";
-import { BROAD_SEARCH, isMobile, openApp, openResults, waitForSearchDone } from "./helpers";
+import { berlinDate, BROAD_SEARCH, isMobile, openApp, openResults, waitForSearchDone } from "./helpers";
 
 test.describe("G Technik", () => {
   test("G1 App-Manifest und Icons (installierbar)", async ({ request }) => {
@@ -136,4 +136,34 @@ test.describe("G Technik", () => {
       expect.soft(json.totalMatches, `${p.name}: Orte mit Prognose für ${iso(sat)}–${iso(sun)}`).toBeGreaterThan(0);
     }
   });
+
+  test("G9 Graue Punkte nur für Orte, deren Wetter nicht passt", async ({ request }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "Server-Prüfung einmal pro Lauf genügt");
+    const base = {
+      originLat: 48.1372,
+      originLon: 11.5756,
+      radiusKm: 300,
+      startDate: berlinDate(1),
+      endDate: berlinDate(2),
+      tolerance: 0,
+      category: "all",
+      limit: 100,
+      favoriteIds: [],
+    };
+    // Alles „egal“: jeder Ort passt – es darf keinen grauen Punkt geben, auch bei Tausenden Treffern
+    const all = await (await request.post("/api/search", {
+      timeout: 60_000,
+      data: { ...base, criteria: { minTempMax: -60, maxPrecipitationSum: null, maxWindSpeed: 500, minSunshineHours: 0 } },
+    })).json();
+    expect(all.totalMatches).toBeGreaterThan(100);
+    expect(all.otherIds, "graue Punkte bei „alles egal“").toEqual([]);
+    // Strenge Suche: graue Punkte und Treffer überschneiden sich nie
+    const strict = await (await request.post("/api/search", {
+      timeout: 60_000,
+      data: { ...base, criteria: { minTempMax: 15, maxPrecipitationSum: 0, maxWindSpeed: 20, minSunshineHours: 4 } },
+    })).json();
+    const hits = new Set((strict.matches as { id: number }[]).map((m) => m.id));
+    expect((strict.otherIds as number[]).filter((id) => hits.has(id))).toEqual([]);
+  });
 });
+

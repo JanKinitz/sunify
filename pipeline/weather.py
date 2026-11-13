@@ -18,8 +18,35 @@ STALE_AFTER = timedelta(hours=36)
 
 def _load_grid(conn):
     with conn.cursor() as cur:
-        cur.execute("SELECT grid_id, lat, lon, elevation, source, utc_offset FROM weather_grid ORDER BY grid_id")
+        cur.execute("SELECT grid_id, lat, lon, elevation, source, utc_offset, tz FROM weather_grid ORDER BY grid_id")
         return cur.fetchall()
+
+
+def backfill_timezones(conn, log=print) -> int:
+    """Einmalig für ältere Datenbanken: IANA-Zeitzone je Rasterpunkt aus GeoNames nachtragen
+    (häufigste Zeitzone der Orte im Rasterpunkt). Gibt die Zahl der ergänzten Rasterpunkte zurück."""
+    from collections import Counter
+
+    from . import geonames
+
+    log("   Zeitzonen der Rasterpunkte nachtragen (einmalig) …")
+    zone_of = {p.geoname_id: p.timezone for p in geonames.load_places()}
+    with conn.cursor() as cur:
+        cur.execute("SELECT geoname_id, grid_id FROM destinations WHERE geoname_id IS NOT NULL")
+        per_grid: dict[int, Counter] = {}
+        for gid_place, grid_id in cur.fetchall():
+            zone = zone_of.get(gid_place)
+            if zone:
+                per_grid.setdefault(grid_id, Counter())[zone] += 1
+        cur.execute("CREATE TEMP TABLE tmp_tz (grid_id INTEGER PRIMARY KEY, tz VARCHAR(64)) ON COMMIT DROP")
+        with cur.copy("COPY tmp_tz (grid_id, tz) FROM STDIN") as cp:
+            for grid_id, counts in per_grid.items():
+                cp.write_row((grid_id, counts.most_common(1)[0][0]))
+        cur.execute("UPDATE weather_grid g SET tz = t.tz FROM tmp_tz t WHERE g.grid_id = t.grid_id AND g.tz IS NULL")
+        updated = cur.rowcount
+    conn.commit()
+    log(f"   {updated} Rasterpunkte mit Zeitzone ergänzt")
+    return updated
 
 
 def _load_existing(conn, grid_ids: list[int]) -> dict[int, tuple[Daily, date | None, datetime | None]]:
@@ -78,11 +105,17 @@ def run_gfs(conn, log=print) -> dict:
     grid = _load_grid(conn)
     if not grid:
         raise SystemExit("Keine Rasterpunkte – bitte zuerst den Seed ausführen.")
+    tz_added = 0
+    if any(g[6] is None for g in grid):
+        tz_added = backfill_timezones(conn, log)
+        grid = _load_grid(conn)
     ids = [g[0] for g in grid]
     lats = np.array([g[1] for g in grid], dtype=np.float64)
     lons = np.array([g[2] for g in grid], dtype=np.float64)
     offs = np.array([g[5] for g in grid], dtype=np.int32)
-    init, daily = gfs.daily_for_points(lats, lons, offs, log)
+    zones = [g[6] for g in grid]
+    # Tagesgrenzen mit dem Versatz zum Zeitpunkt des Laufs (Sommer-/Winterzeit), sonst gespeicherter Wert
+    init, daily = gfs.daily_for_points(lats, lons, offs, log, zones=zones)
 
     om_ids = {g[0] for g in grid if g[4] == "open-meteo"}
     existing = _load_existing(conn, ids)
@@ -111,7 +144,11 @@ def run_gfs(conn, log=print) -> dict:
         if d is not None and len(d) > 0:
             rows.append((gid, d, until, om_at))
     written = _write(conn, rows)
-    return {"init": init.isoformat(), "points": len(ids), "written": written, "missing": missing, "open_meteo_kept": kept_om}
+    return {
+        "init": init.isoformat(), "points": len(ids), "written": written, "missing": missing,
+        "open_meteo_kept": kept_om, "timezones_added": tz_added,
+        "with_timezone": sum(1 for z in zones if z),
+    }
 
 
 def run_open_meteo(conn, log=print) -> dict:

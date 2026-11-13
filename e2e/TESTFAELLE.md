@@ -47,6 +47,9 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | C4 | Unmögliche Suche | Leerzustand „Hier versteckt sich die Sonne noch“ mit „Alle Filter zurücksetzen“, nie eine leere Seite |
 | C5 | „Suche teilen“ | Hinweis, dass der Link kopiert wurde |
 | C6 | Geteilten Link öffnen (Frankfurt, 150 km, 8 °C, etwas flexibel) | Startort und alle Filter werden übernommen und an die Suche übergeben |
+| C7 | Suche mit „Flexibel“ und mittleren Ansprüchen | Fast-Treffer nennen in der Liste den Grund, z. B. „≈ Sa: 19 °C statt mind. 20 °C“ (übersprungen, wenn es gerade keine Fast-Treffer gibt) |
+| C8 | Zeitraum Tag 10–11 | Hinweis „Ab dem 8. Tag … unsicher“ über der Liste, in der Detailansicht „Trend“ an den Tagen |
+| C9 | Suche für morgen, Detailansicht | kein Unsicherheits-Hinweis; Vortag und Folgetag stehen immer in der Timeline – als Wettertag oder als Platzhalter „keine Wetterdaten“ |
 
 ## D – Karte (`map.spec.ts`)
 
@@ -55,6 +58,7 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | D1 | Wetter-Pill eines Orts anklicken | Pills sichtbar, Klick öffnet die Detailansicht |
 | D2 | Sammel-Pill anklicken | Karte zoomt hinein, danach mindestens so viele Einzelorte sichtbar (übersprungen, wenn es keine Sammel-Pill gibt) |
 | D3 | Legende und Radius | Legende „n Treffer · Zeitraum“, Startpunkt und Radius-Kreis auf der Karte |
+| D4 | Fast-Treffer auf der Karte | gelbe Pills zeigen die Übereinstimmung, z. B. „75 %“ (übersprungen ohne Fast-Treffer) |
 
 ## E – Sprache und Einheiten (`i18n.spec.ts`)
 
@@ -86,6 +90,7 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | G6 | Quellenangaben | Open-Meteo, NOAA GFS, GeoNames, Wikimedia Commons, OpenStreetMap unter der Liste |
 | G7 | Antwortzeit: breite Suche (München, 300 km) dreimal direkt an `/api/search` (nur Desktop-Lauf) | schnellste Antwort unter 8 s; Laufzeiten je Abfrageschritt stehen im Bericht |
 | G8 | Prognosen weltweit (Christchurch, Tokio, Kapstadt, Denver, Honolulu, Buenos Aires), Wochenende, alles „egal“ (nur Desktop-Lauf) | überall Treffer – fängt verschobene Tage in fernen Zeitzonen ab |
+| G9 | Graue Punkte (nur Desktop-Lauf) | bei „alles egal“ (> 100 Treffer) kein grauer Punkt; bei strenger Suche nie ein Ort zugleich Treffer und grau |
 
 ## Änderungen
 
@@ -95,3 +100,4 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | 13.11.2026 | 2.0 | E1/E2: Sprach-/Einheitenschalter eindeutig ansprechen; G7 Antwortzeit neu; Zeitlimits für langsame Suchen erhöht |
 | 13.11.2026 | 2.0 | Suche beschleunigt (G7 war rot: 14–26 s für 300 km); keine Teständerung |
 | 13.11.2026 | 2.0 | Fehler: Tage in fernen Zeitzonen um einen Tag verschoben (Christchurch ohne Treffer). A5 verschärft, G8 neu; Unit-Tests der Datenaufbereitung in `pipeline/tests/` |
+| 13.11.2026 | 2.0 | Fast-Treffer-Grund (C7), Unsicherheit ab Tag 8 (C8), Vor-/Folgetag immer sichtbar (C9), Prozent auf Pills (D4), graue Punkte korrekt (G9) |

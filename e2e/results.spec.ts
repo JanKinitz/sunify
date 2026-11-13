@@ -1,6 +1,6 @@
 // C – Ergebnisse, Detailansicht, Merkliste, Teilen (siehe e2e/TESTFAELLE.md)
 import { expect, test } from "@playwright/test";
-import { BROAD_SEARCH, IMPOSSIBLE_SEARCH, isMobile, nextSearch, openApp, openResults, originInput, waitForSearchDone } from "./helpers";
+import { berlinDate, BROAD_SEARCH, IMPOSSIBLE_SEARCH, isMobile, NEAR_SEARCH, nextSearch, openApp, openResults, originInput, waitForSearchDone } from "./helpers";
 
 test.describe("C Ergebnisse", () => {
   test("C1 Ergebnisliste mit Karten und Sortierung", async ({ page }) => {
@@ -84,4 +84,37 @@ test.describe("C Ergebnisse", () => {
     expect(body.criteria.minTempMax).toBe(8);
     await expect(originInput(page)).toHaveValue("Frankfurt am Main");
   });
+
+  test("C7 Fast-Treffer nennen in der Liste den Grund", async ({ page }) => {
+    await openApp(page, NEAR_SEARCH);
+    await waitForSearchDone(page);
+    const list = await openResults(page);
+    const near = list.getByTestId("result-card").filter({ hasText: "Fast-Treffer:" });
+    test.skip((await near.count()) === 0, "Bei diesem Wetter gibt es gerade keine Fast-Treffer");
+    const reasons = near.first().getByTestId("near-reasons");
+    await expect(reasons).toBeVisible();
+    await expect(reasons.locator("li").first()).toHaveText(/^≈ (Mo|Di|Mi|Do|Fr|Sa|So): .+ statt (mind\.|max\.) /);
+  });
+
+  test("C8 Unsicherheit ab Tag 8 wird gekennzeichnet", async ({ page }) => {
+    await openApp(page, `o=muenchen&r=300&d=custom&s=${berlinDate(9)}&e=${berlinDate(10)}&t=-5&p=any&w=60&sun=0&c=all`);
+    await waitForSearchDone(page);
+    const list = await openResults(page);
+    await expect(list.getByTestId("uncertainty-hint")).toBeVisible();
+    await list.getByTestId("result-card").first().getByRole("button", { name: /Details & Unterkünfte/ }).click();
+    await expect(page.getByRole("dialog", { name: /Details zu/ }).getByTestId("trend-badge").first()).toBeVisible();
+  });
+
+  test("C9 Kurzfristige Suche ohne Unsicherheits-Hinweis, Detail zeigt immer den Vortag", async ({ page }) => {
+    await openApp(page, "o=muenchen&r=300&d=tomorrow&t=-5&p=any&w=60&sun=0&c=all");
+    await waitForSearchDone(page);
+    const list = await openResults(page);
+    await expect(list.getByTestId("uncertainty-hint")).toHaveCount(0);
+    await list.getByTestId("result-card").first().getByRole("button", { name: /Details & Unterkünfte/ }).click();
+    const dialog = page.getByRole("dialog", { name: /Details zu/ });
+    // Vortag als Wettertag oder – ohne Daten – als Platzhalter, aber nie einfach weggelassen
+    await expect(dialog.getByText("Vortag", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("Folgetag", { exact: true })).toBeVisible();
+  });
 });
+

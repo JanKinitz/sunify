@@ -1,15 +1,14 @@
-Wetter: Tage in fernen Zeitzonen nicht mehr um einen Tag verschoben
+Bedienung: Fast-Treffer-Grund, Unsicherheit ab Tag 8, schnellere Suche
 
-Die Tagesauswertung der GFS-Daten zaehlte die Tage ab dem UTC-Datum des Laufs,
-setzte das Datum aber ab dem lokalen Datum. Wo lokal schon ein anderer Tag war
-(Neuseeland, Japan beim 12Z/18Z-Lauf, Amerika beim 00Z-Lauf), lagen alle Werte
-einen Tag daneben; Christchurch hatte fuer das Wochenende keine Prognose.
-
-- Datum korrekt ab dem UTC-Init-Tag
-- "Heute" bleibt aus dem vorigen Lauf erhalten, wenn ein neuer Lauf erst morgen beginnt
-- Unit-Tests der Datenaufbereitung (pipeline/tests), vor jedem Datenjob
-- GFS rechnet nach Aenderungen an der Aufbereitung sofort neu
-- Tests: A5 verlangt Treffer um Christchurch, G8 prueft sechs Zeitzonen
+- Fast-Treffer nennen in der Liste den Grund ("Sa: 19 °C statt mind. 20 °C")
+- Ab Prognosetag 8: Hinweis ueber der Liste, gestrichelte Tage, "Trend" im Detail
+- Gelbe Karten-Pills zeigen die Uebereinstimmung in Prozent
+- Suche: Entfernungen auf der Kugel, graue Punkte im selben Durchgang,
+  Stammdaten/Prognosen in einer Abfrage (2 statt 6 Wege zur Datenbank)
+- Graue Punkte nur fuer Orte, deren Wetter nicht passt, gleichmaessig verteilt
+- Vor-/Folgetag ohne Daten als Platzhalter
+- Tagesgrenzen der GFS-Daten mit Sommer-/Winterzeit je Lauf (weather_grid.tz)
+- Tests: C7, C8, C9, D4, G9 neu; Unit-Tests fuer Zeitzonen
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

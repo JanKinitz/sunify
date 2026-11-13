@@ -104,6 +104,7 @@ def write(conn, data: dict) -> dict:
         [p.country for p in places],
         offsets,
         [scores[p.geoname_id] for p in places],
+        [p.timezone for p in places],
     )
     om = choose_open_meteo(points, OPEN_METEO_MAX_POINTS)
     sizes = {s: sum(1 for g in points if g.cell_size == s) for s in (0.25, 0.5, 1.0)}
@@ -112,12 +113,12 @@ def write(conn, data: dict) -> dict:
     with conn.cursor() as cur:
         cur.execute("TRUNCATE weather_forecasts, destinations, weather_grid RESTART IDENTITY CASCADE")
         with cur.copy(
-            "COPY weather_grid (grid_id, lat, lon, geom, cell_size, elevation, country_code, source, utc_offset) FROM STDIN"
+            "COPY weather_grid (grid_id, lat, lon, geom, cell_size, elevation, country_code, source, utc_offset, tz) FROM STDIN"
         ) as cp:
             for gi, g in enumerate(points, 1):
                 cp.write_row(
                     (gi, g.lat, g.lon, f"SRID=4326;POINT({g.lon} {g.lat})", g.cell_size, g.elevation, g.country,
-                     "open-meteo" if gi - 1 in om else "gfs", g.utc_offset)
+                     "open-meteo" if gi - 1 in om else "gfs", g.utc_offset, g.tz)
                 )
         admin = data["admin_names"]
         wiki, credits = data["wiki"], data["credits"]

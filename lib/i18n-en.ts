@@ -330,4 +330,14 @@ export const EN: Record<string, string> = {
   "Eine neue Version von Sunify ist da.": "A new version of Sunify is available.",
   "Aktualisieren": "Update",
   "Später": "Later",
+  "{day}: {value} statt mind. {target}": "{day}: {value} instead of at least {target}",
+  "{day}: {value} Regen statt max. {target}": "{day}: {value} rain instead of max. {target}",
+  "{day}: {value} Wind statt max. {target}": "{day}: {value} wind instead of max. {target}",
+  "{day}: {value} Std. Sonne statt mind. {target}": "{day}: {value} h of sun instead of at least {target} h",
+  "Trend – ab dem 8. Tag ist die Prognose noch unsicher": "Trend – from day 8 the forecast is still uncertain",
+  "Ab dem 8. Tag ist die Prognose noch unsicher – kurz vor der Reise nochmal prüfen.": "From day 8 the forecast is still uncertain – check again shortly before your trip.",
+  "Trend": "Trend",
+  "Ab dem 8. Tag sind Wetterprognosen noch unsicher (gestrichelt markiert). Kurz vor der Reise lohnt sich ein zweiter Blick.":
+    "From day 8, weather forecasts are still uncertain (dashed). It's worth checking again shortly before your trip.",
+  "Für diesen Tag liegen noch keine Wetterdaten vor.": "No weather data for this day yet.",
 };

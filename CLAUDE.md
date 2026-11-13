@@ -67,6 +67,8 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
   oder ≥ 400 m, sonst 1°. Rasterpunkte liegen auf GFS-Knoten.
 - **Höhenkorrektur:** 0,0065 °C/m zwischen Rasterhöhe (einwohnergewichtetes Mittel) und Ortshöhe, begrenzt auf ±8 °C;
   die API liefert `tempCorrection`, `lib/api.ts` rechnet sie auf die Temperaturen.
+- **Zeitzonen:** `weather_grid.tz` (IANA, häufigste der Orte); der GFS-Job rechnet den UTC-Versatz je Lauf
+  (Sommer-/Winterzeit), fehlende Zeitzonen trägt er einmalig aus GeoNames nach. `utc_offset` ist nur Rückfall.
 - **Wetter:** `weather_forecasts` – eine Zeile je Rasterpunkt mit Arrays ab `start_date` (bis 16 Tage).
   Open-Meteo hat Vorrang bis `primary_until`, wird nach 36 h ohne Update als veraltet behandelt; danach GFS.
   GFS hat keine Sonnenstunden ⇒ Schätzung aus Bewölkung × Tageslicht (Kurzwelle > 20 W/m²).
@@ -94,7 +96,12 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
 - Während eine Suche läuft (`pending`), zeigen Buttons und Legende „Suche läuft …“ statt der alten Trefferzahl,
   die alte Liste wird abgeblendet.
 - Desktop: Filter links, Karte ~60 %, Liste ~40 %. Mobil: Vollbild-Karte, Bottom-Sheet, Filter als Vollbild-Sheet.
-- Karten-Pills `☀️ 18°C | Ort`; Fast-Treffer gestrichelt gelb (`.is-near`); Sammel-Pills bei Überlappung.
+- Karten-Pills `☀️ 18°C | Ort`; Fast-Treffer gestrichelt gelb mit Prozentwert (`.is-near`, `.pct`); Sammel-Pills bei
+  Überlappung. Graue Punkte = bekannte Orte (Score ≥ 35) im Radius, deren Wetter nicht passt, gleichmäßig verteilt
+  (je Kartenzelle ~Radius/400 km der bekannteste); kommen aus derselben Abfrage (`is_match = false`).
+- Fast-Treffer nennen in der Liste den Grund (`nearMissReasons`, z. B. „Sa: 19 °C statt mind. 20 °C“).
+- Ab Prognosetag 8 (`isUncertainDay`): Hinweis über der Liste, Tages-Chips gestrichelt, „Trend“ in der Detailansicht.
+- Detailansicht zeigt Vor- und Folgetag immer – ohne Daten als Platzhalter.
 - Farben: Grün = erfüllt, Gelb = im Toleranzbereich, Rot = verfehlt.
 - Datumswerte immer als lokale `YYYY-MM-DD`-Strings über `lib/dates.ts`. Prognose: 16 Tage.
 - Die App rendert nur im Browser (`ssr: false`), weil Leaflet `window` braucht.
@@ -111,7 +118,7 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
 | `components/ResultList.tsx` | Ergebniskarten mit Foto (`PhotoHeader`), Fast-Treffer-Abschnitt |
 | `components/DetailDrawer.tsx` | Detail mit Foto, Tages-Nachweis (ok/knapp/verfehlt), Conversion-Box |
 | `components/SettingsSwitch.tsx` | DE/EN, °C/°F, „App installieren“ |
-| `services/searchService.ts` | Validierung, `search_destinations_v2`, Prognosen je Raster, Lockerungsvorschläge |
+| `services/searchService.ts` | Validierung, `search_destinations_v2` (Treffer + graue Punkte), danach EINE Abfrage für Stammdaten/Prognosen, Lockerungsvorschläge; `meta.timings` |
 | `pipeline/` | Python: `seed.py`, `grid.py`, `scoring.py`, `wikidata.py`, `gfs.py`, `openmeteo.py`, `weather.py` |
 | `e2e/` | Testbibliothek: `TESTFAELLE.md` (Katalog), `*.spec.ts` (Playwright), `helpers.ts` |
 | `components/UpdateNotice.tsx` | Update-Erkennung nach neuen Veröffentlichungen |
@@ -137,6 +144,10 @@ npm run build      # Produktions-Build inkl. Typprüfung
 npm run test:e2e   # Testbibliothek (SUNIFY_URL=… für die Online-Version), Bericht: npm run test:e2e:report
 python -m pipeline migrate|seed|weather-gfs|weather-om|status   # Datenjobs (braucht DATABASE_URL)
 ```
+
+## Backlog (bei der nächsten Änderung mit erledigen)
+
+- (leer)
 
 ## Später
 

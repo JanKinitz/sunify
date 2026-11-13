@@ -1,6 +1,6 @@
 // D – Karte (siehe e2e/TESTFAELLE.md)
 import { expect, test } from "@playwright/test";
-import { BROAD_SEARCH, openApp, waitForSearchDone } from "./helpers";
+import { BROAD_SEARCH, NEAR_SEARCH, openApp, waitForSearchDone } from "./helpers";
 
 test.describe("D Karte", () => {
   test("D1 Wetter-Pills erscheinen und öffnen die Detailansicht", async ({ page }) => {
@@ -33,4 +33,13 @@ test.describe("D Karte", () => {
     await expect(page.locator(".sunify-origin")).toBeVisible();
     await expect(page.locator('path[stroke="#f98307"]').first()).toBeAttached();
   });
+
+  test("D4 Fast-Treffer-Pills zeigen die Übereinstimmung in Prozent", async ({ page }) => {
+    await openApp(page, NEAR_SEARCH);
+    await waitForSearchDone(page);
+    const near = page.locator(".sunify-pill.is-near");
+    test.skip((await near.count()) === 0, "Keine Fast-Treffer auf der Karte");
+    await expect(near.first().locator(".pct")).toHaveText(/^\d{1,3} %$/);
+  });
 });
+

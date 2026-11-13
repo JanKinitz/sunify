@@ -75,3 +75,13 @@ export const BROAD_SEARCH = "o=muenchen&r=300&d=weekend&t=-5&p=any&w=60&sun=0&c=
 
 /** Suche, die praktisch nie Treffer liefert (35 °C, windstill, 12 Std. Sonne, trocken, 50 km) */
 export const IMPOSSIBLE_SEARCH = "o=muenchen&r=50&d=tomorrow&t=35&p=dry&w=5&sun=12&c=all";
+
+/** Datum (YYYY-MM-DD) in Berliner Zeit, heute + `days` Tage – wie die App rechnet */
+export function berlinDate(days = 0): string {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Berlin" }));
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Suche, die meist Fast-Treffer liefert (Flexibel, mittlere Ansprüche) */
+export const NEAR_SEARCH = "o=muenchen&r=300&d=weekend&t=10&p=dry&w=20&sun=3&c=all&tol=2";

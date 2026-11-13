@@ -119,17 +119,22 @@ def load_names(wanted: set[int]) -> dict[int, dict[str, str]]:
     return pick_names_lines(_read_zip_member(path, "alternateNamesV2.txt"), wanted)
 
 
-_offset_cache: dict[str, int] = {}
+_offset_cache: dict[tuple[str, str], int] = {}
 
 
 def utc_offset_hours(tz_name: str, when: datetime | None = None) -> int:
-    """Aktueller UTC-Versatz einer Zeitzone in ganzen Stunden (für die Tagesgrenzen der GFS-Werte)."""
-    if tz_name in _offset_cache:
-        return _offset_cache[tz_name]
+    """UTC-Versatz einer Zeitzone in ganzen Stunden zum Zeitpunkt `when` (Standard: jetzt) –
+    berücksichtigt Sommer-/Winterzeit. `when` ohne Zeitzone gilt als UTC."""
+    moment = when or datetime.now(timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    key = (tz_name, moment.strftime("%Y-%m-%dT%H"))
+    if key in _offset_cache:
+        return _offset_cache[key]
     try:
-        offset = (when or datetime.now(timezone.utc)).astimezone(ZoneInfo(tz_name)).utcoffset()
+        offset = moment.astimezone(ZoneInfo(tz_name)).utcoffset()
         hours = round(offset.total_seconds() / 3600) if offset is not None else 0
     except Exception:
         hours = 0
-    _offset_cache[tz_name] = hours
+    _offset_cache[key] = hours
     return hours
