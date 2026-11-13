@@ -76,28 +76,25 @@ BEGIN
     WHERE ST_DWithin(d.geom, v_origin, p_radius_meters)
       AND (p_tags IS NULL OR d.tags && p_tags)
   ),
-  days AS (
-    SELECT ds.destination_id,
-           ds.temp_max[i] + ds.corr AS t, ds.precip[i] AS p, ds.wind_max[i] AS w, COALESCE(ds.sunshine[i], 0) AS s
-    FROM dest ds,
-         generate_series(p_start_date - ds.start_date + 1, p_end_date - ds.start_date + 1) AS i
-  ),
-  scored AS (
-    SELECT dy.destination_id,
-           COUNT(*) FILTER (WHERE dy.t >= p_min_temp AND dy.p <= v_precip AND dy.w <= p_max_wind AND dy.s >= p_min_sunshine) AS strict_days,
-           COUNT(*) FILTER (WHERE dy.t >= p_min_temp - v_dt AND dy.p <= v_precip + v_dp AND dy.w <= p_max_wind + v_dw AND dy.s >= p_min_sunshine - v_ds) AS loose_days,
-           SUM((dy.t >= p_min_temp)::INT + (dy.p <= v_precip)::INT + (dy.w <= p_max_wind)::INT + (dy.s >= p_min_sunshine)::INT) AS ok_checks,
-           AVG(dy.t)::REAL AS avg_t, SUM(dy.p)::REAL AS sum_p, MAX(dy.w)::REAL AS max_w, AVG(dy.s)::REAL AS avg_s
-    FROM days dy
-    GROUP BY dy.destination_id
-  ),
   matched AS (
+    -- Tageswerte je Ort in einem Durchgang (LATERAL) auswerten, ohne "dest" ein zweites Mal zu verwenden.
+    -- Die frühere Fassung verband die Zwischentabelle mit sich selbst; bei großen Radien (Tausende Orte)
+    -- dauerte die Suche damit 15–25 s.
     SELECT ds.destination_id, ds.grid_id, ds.distance_km, ds.tourism_score, ds.population, ds.corr,
            (sc.strict_days = v_days) AS strict_match,
            ROUND(100.0 * sc.ok_checks / (4 * v_days))::SMALLINT AS match_pct,
            sc.avg_t, sc.sum_p, sc.max_w, sc.avg_s
-    FROM scored sc
-    JOIN dest ds ON ds.destination_id = sc.destination_id
+    FROM dest ds
+    CROSS JOIN LATERAL (
+      SELECT COUNT(*) FILTER (WHERE dy.t >= p_min_temp AND dy.p <= v_precip AND dy.w <= p_max_wind AND dy.s >= p_min_sunshine) AS strict_days,
+             COUNT(*) FILTER (WHERE dy.t >= p_min_temp - v_dt AND dy.p <= v_precip + v_dp AND dy.w <= p_max_wind + v_dw AND dy.s >= p_min_sunshine - v_ds) AS loose_days,
+             SUM((dy.t >= p_min_temp)::INT + (dy.p <= v_precip)::INT + (dy.w <= p_max_wind)::INT + (dy.s >= p_min_sunshine)::INT) AS ok_checks,
+             AVG(dy.t)::REAL AS avg_t, SUM(dy.p)::REAL AS sum_p, MAX(dy.w)::REAL AS max_w, AVG(dy.s)::REAL AS avg_s
+      FROM (
+        SELECT ds.temp_max[i] + ds.corr AS t, ds.precip[i] AS p, ds.wind_max[i] AS w, COALESCE(ds.sunshine[i], 0) AS s
+        FROM generate_series(p_start_date - ds.start_date + 1, p_end_date - ds.start_date + 1) AS i
+      ) dy
+    ) sc
     WHERE sc.loose_days >= v_days - v_fail
   )
   SELECT m.destination_id, m.grid_id, ROUND(m.distance_km::NUMERIC, 1)::REAL, m.tourism_score, m.population,

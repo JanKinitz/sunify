@@ -92,3 +92,4 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 |---|---|---|
 | 13.11.2026 | 2.0 | Testbibliothek angelegt (A1–G6) |
 | 13.11.2026 | 2.0 | E1/E2: Sprach-/Einheitenschalter eindeutig ansprechen; G7 Antwortzeit neu; Zeitlimits für langsame Suchen erhöht |
+| 13.11.2026 | 2.0 | Suche beschleunigt (G7 war rot: 14–26 s für 300 km); keine Teständerung |

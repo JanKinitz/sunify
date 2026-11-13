@@ -49,7 +49,8 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
 - `db-setup.yml` (manuell, `run-db-setup.bat`): migrate → seed → weather-om → weather-gfs → status.
 - `weather-gfs.yml`: 4× täglich (05:40, 11:40, 17:40, 23:40 UTC) NOAA GFS weltweit, 16 Tage.
 - `weather-openmeteo.yml`: täglich 04:15 UTC Open-Meteo für Mitteleuropa (Box 43–56° N, 2–20° O, max. 8.000 Punkte).
-- `deploy-netlify.yml`: bei jedem Push auf `main` (Secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`), danach `e2e.yml`.
+- `deploy-netlify.yml`: bei jedem Push auf `main`: SQL-Migrationen (`python -m pipeline migrate`, idempotent), Netlify
+  (Secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`), danach `e2e.yml`.
 - `e2e.yml`: Testbibliothek (Playwright) gegen die veröffentlichte Adresse; auch manuell oder per `run-tests.bat`.
 
 ## Daten

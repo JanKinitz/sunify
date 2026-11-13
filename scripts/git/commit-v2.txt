@@ -1,9 +1,10 @@
-Tests: Korrekturen nach dem ersten Lauf, Antwortzeit-Messung
+Suche beschleunigt: Tageswerte je Ort in einem Durchgang
 
-- E1/E2: Sprach- und Einheitenschalter eindeutig ansprechen
-- G7 neu: Antwortzeit der breiten Suche, Laufzeiten je Abfrageschritt
-  (meta.timings in /api/search)
-- Zeitlimits fuer langsame Suchen erhoeht
+Die Messung im Test G7 zeigte 14-26 s fuer eine Suche mit 300 km, fast alles
+davon in search_destinations_v2. Die Funktion verband ihre Zwischentabelle mit
+sich selbst; jetzt werden die Tage je Ort per LATERAL in einem Durchgang
+ausgewertet (gleiche Ergebnisse). Die Veroeffentlichung spielt SQL-Migrationen
+kuenftig automatisch ein.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

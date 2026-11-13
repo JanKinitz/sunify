@@ -7,7 +7,6 @@ on:
     branches: [main]
     paths-ignore:
       - "pipeline/**"
-      - "supabase/**"
       - "**.md"
       - "**.bat"
   workflow_dispatch:
@@ -43,6 +42,19 @@ jobs:
         if: steps.check.outputs.ready == 'true'
         with:
           node-version: 22
+
+      - uses: actions/setup-python@v6
+        if: steps.check.outputs.ready == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Datenbank-Funktionen aktualisieren (Migrationen)
+        if: steps.check.outputs.ready == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          pip install --quiet "psycopg[binary]>=3.2"
+          python -m pipeline migrate
 
       - name: Abhängigkeiten installieren
         if: steps.check.outputs.ready == 'true'
