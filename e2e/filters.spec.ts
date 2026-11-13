@@ -63,7 +63,7 @@ test.describe("B Filter", () => {
     await waitForSearchDone(page);
     // Suche künstlich verlangsamen, damit der Zwischenzustand sicher sichtbar ist
     await page.route("**/api/search", async (route) => {
-      await new Promise((r) => setTimeout(r, 2500));
+      await new Promise((r) => setTimeout(r, 5000));
       await route.continue();
     });
     const filters = await openFilters(page);

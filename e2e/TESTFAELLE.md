@@ -103,3 +103,4 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | 13.11.2026 | 2.0 | Fast-Treffer-Grund (C7), Unsicherheit ab Tag 8 (C8), Vor-/Folgetag immer sichtbar (C9), Prozent auf Pills (D4), graue Punkte korrekt (G9) |
 | 13.11.2026 | 2.0 | C7/D4: Suche passt sich dem aktuellen Wetter an, damit es sicher Fast-Treffer gibt (vorher übersprungen) |
 | 13.11.2026 | 2.0 | C7/D4: Schwelle wird am Server ausprobiert (vorher geschätzt, ohne Fast-Treffer); Protokoll der Versuche im Testlauf |
+| 13.11.2026 | 2.0 | Tests laufen vor der Live-Schaltung gegen eine kostenlose Vorschau-Version; B6 mit längerer künstlicher Verzögerung (auf dem iPhone gelegentlich zu knapp) |

@@ -32,8 +32,11 @@ Vollständige Spezifikation: `SPEC.md` (nur lokal, nicht im öffentlichen Reposi
 2. **Testbibliothek anpassen:** für jede neue oder geänderte Funktion Eintrag in `e2e/TESTFAELLE.md` (neue ID,
    Änderungsliste unten ergänzen) und Test in `e2e/*.spec.ts`; entfallene Funktionen samt Test streichen.
    Selektoren: Rollen/Beschriftungen bevorzugen, sonst `data-testid` (Layout-Bereiche siehe `e2e/helpers.ts`).
-3. Hochladen mit `save-v2.bat` → GitHub veröffentlicht bei Netlify und lässt danach **alle Tests in drei Ansichten**
-   (Desktop, Android, iPhone) laufen. Ein Release ist erst fertig, wenn dieser Lauf grün ist.
+3. Hochladen mit `save-v2.bat` → GitHub baut eine **Vorschau-Version** bei Netlify (0 Credits), lässt **alle Tests in
+   drei Ansichten** (Desktop, Android, iPhone) dagegen laufen und schaltet genau diese Version erst bei grünem Lauf live.
+   Ein Release ist erst fertig, wenn der Lauf grün und live ist.
+   **Netlify-Credits:** Gratis-Tarif 300/Monat, jede Live-Schaltung 15, Vorschauen gratis; bei 0 wird die Seite bis
+   zum nächsten Abrechnungsmonat (12.) pausiert. Änderungen bündeln, nicht für Kleinigkeiten hochladen.
 4. Nach einer Veröffentlichung erkennt die offene App die neue Build-Kennung (`/api/version`) und lädt neu
    (im Hintergrund still, sonst mit Hinweis „Aktualisieren“) – `components/UpdateNotice.tsx`.
 
@@ -53,8 +56,9 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
 - Alle Daten-Workflows führen vorher die Unit-Tests `pipeline/tests/` aus (Datumsberechnung je Zeitzone u. a.) und
   spielen die Migrationen ein (sonst Wettlauf mit der Veröffentlichung bei Schemaänderungen).
 - `weather-openmeteo.yml`: täglich 04:15 UTC Open-Meteo für Mitteleuropa (Box 43–56° N, 2–20° O, max. 8.000 Punkte).
-- `deploy-netlify.yml`: bei jedem Push auf `main`: SQL-Migrationen (`python -m pipeline migrate`, idempotent), Netlify
-  (Secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`), danach `e2e.yml`.
+- `deploy-netlify.yml`: bei jedem Push auf `main`: SQL-Migrationen (`python -m pipeline migrate`, idempotent),
+  Vorschau-Deploy (`--alias v-<sha>`, Secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`) → `e2e.yml` gegen die Vorschau →
+  Job `live` schaltet die getestete Version per `restoreSiteDeploy` live und prüft `/api/version`.
 - `e2e.yml`: Testbibliothek (Playwright) gegen die veröffentlichte Adresse; auch manuell oder per `run-tests.bat`.
 
 ## Daten

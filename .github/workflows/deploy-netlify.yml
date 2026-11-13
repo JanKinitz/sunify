@@ -1,4 +1,7 @@
-# Veröffentlicht Sunify 2.0 bei jedem Push auf main (und auf Knopfdruck) bei Netlify.
+# Veröffentlicht Sunify 2.0 bei jedem Push auf main (und auf Knopfdruck) bei Netlify – in drei Schritten:
+#   1. vorschau: bauen und als Vorschau-Version hochladen (kostet bei Netlify keine Credits)
+#   2. tests:    komplette Testbibliothek gegen die Vorschau
+#   3. live:     nur wenn alle Tests grün sind, genau diese Version live schalten (eine Produktiv-Veröffentlichung)
 # Benötigt die Secrets NETLIFY_AUTH_TOKEN und NETLIFY_SITE_ID (legt setup-netlify.bat an).
 name: Veröffentlichen (Netlify)
 
@@ -17,10 +20,12 @@ concurrency:
 
 jobs:
   deploy:
+    name: vorschau
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
-      url: ${{ steps.smoke.outputs.url }}
+      url: ${{ steps.preview.outputs.url }}
+      deploy_id: ${{ steps.preview.outputs.deploy_id }}
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
@@ -61,27 +66,75 @@ jobs:
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-      - name: Bauen und veröffentlichen
+      - name: Bauen und als Vorschau hochladen (ohne Credits)
         if: steps.check.outputs.ready == 'true'
         env:
           NEXT_PUBLIC_BUILD_ID: ${{ github.sha }}
-        run: npx --yes netlify-cli@latest deploy --build --prod --site "$NETLIFY_SITE_ID" --message "GitHub ${GITHUB_SHA::7}"
+        run: npx --yes netlify-cli@latest deploy --build --site "$NETLIFY_SITE_ID" --alias "v-${GITHUB_SHA::7}" --message "GitHub ${GITHUB_SHA::7}"
 
-      - name: Funktionstest
-        id: smoke
+      - name: Vorschau-Adresse ermitteln und prüfen
+        id: preview
         if: steps.check.outputs.ready == 'true'
         run: |
-          URL=$(npx --yes netlify-cli@latest api getSite --data "{\"site_id\":\"$NETLIFY_SITE_ID\"}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).ssl_url||JSON.parse(s).url))')
-          echo "Adresse: $URL"
+          npx --yes netlify-cli@latest api listSiteDeploys --data "{\"site_id\":\"$NETLIFY_SITE_ID\",\"per_page\":20}" > deploys.json
+          read -r ID URL < <(node -e '
+            const list = require("./deploys.json");
+            const tag = "GitHub " + process.env.GITHUB_SHA.slice(0, 7);
+            let d = list.find((x) => x.title === tag && x.state === "ready");
+            if (!d) { console.error("Kein Deploy mit Titel " + tag + " - nehme den neuesten fertigen."); d = list.find((x) => x.state === "ready"); }
+            if (!d) { console.error("Vorschau-Version nicht gefunden"); process.exit(1); }
+            console.log(d.id, d.deploy_ssl_url || d.deploy_url);
+          ')
+          if [ -z "$ID" ] || [ -z "$URL" ]; then echo "::error::Vorschau-Version nicht gefunden."; exit 1; fi
+          echo "Vorschau: $URL"
           echo "url=$URL" >> "$GITHUB_OUTPUT"
-          curl -fsS "$URL/api/status" | head -c 800 || echo "Status noch nicht abrufbar (Datenbank evtl. noch nicht eingerichtet)."
+          echo "deploy_id=$ID" >> "$GITHUB_OUTPUT"
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/version")
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Die Vorschau ist nicht öffentlich erreichbar (HTTP $CODE). Bei Netlify unter Project configuration → Access & security → Visitor access den Schutz für Vorschau-Versionen ausschalten."
+            exit 1
+          fi
+          curl -fsS "$URL/api/status" | head -c 800 || true
           echo
-          echo "### Sunify 2.0 ist online: $URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Vorschau: $URL" >> "$GITHUB_STEP_SUMMARY"
 
-  # Komplette Testbibliothek (e2e/) gegen die gerade veröffentlichte Version
+  # Komplette Testbibliothek (e2e/) gegen die Vorschau-Version
   tests:
     needs: deploy
     if: needs.deploy.outputs.url != ''
     uses: ./.github/workflows/e2e.yml
     with:
       url: ${{ needs.deploy.outputs.url }}
+
+  # Alles grün: genau die getestete Version live schalten
+  live:
+    needs: [deploy, tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      DEPLOY_ID: ${{ needs.deploy.outputs.deploy_id }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Getestete Version live schalten
+        run: npx --yes netlify-cli@latest api restoreSiteDeploy --data "{\"site_id\":\"$NETLIFY_SITE_ID\",\"deploy_id\":\"$DEPLOY_ID\"}" > /dev/null
+
+      - name: Live-Version prüfen
+        run: |
+          URL=$(npx --yes netlify-cli@latest api getSite --data "{\"site_id\":\"$NETLIFY_SITE_ID\"}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);console.log(j.ssl_url||j.url)})')
+          for i in $(seq 1 12); do
+            if curl -fsS "$URL/api/version" | grep -q "$GITHUB_SHA"; then
+              echo "### Sunify 2.0 ist online: $URL (getestete Version ${GITHUB_SHA::7})" >> "$GITHUB_STEP_SUMMARY"
+              curl -fsS "$URL/api/status" | head -c 800 || true
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Live-Adresse meldet nicht die neue Version ${GITHUB_SHA::7}."
+          exit 1

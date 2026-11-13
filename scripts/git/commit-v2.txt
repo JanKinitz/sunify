@@ -1,7 +1,9 @@
-Tests C7/D4: Fast-Treffer-Suche am Server ermitteln
+Veroeffentlichung: erst Vorschau testen, dann live schalten
 
-Die geschaetzte Schwelle ergab weiterhin keine Fast-Treffer. Der Test probiert
-die Mindesttemperatur jetzt direkt an /api/search aus und protokolliert die Versuche.
+Jeder Push baut eine kostenlose Vorschau-Version bei Netlify, die Testbibliothek
+laeuft dagegen und erst bei gruenem Lauf wird genau diese Version live geschaltet.
+Spart Netlify-Credits und verhindert, dass ungetestete Versionen online gehen.
+B6 mit laengerer kuenstlicher Verzoegerung.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J
