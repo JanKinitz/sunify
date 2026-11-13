@@ -50,7 +50,8 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
 - `weather-gfs.yml`: 4× täglich (05:40, 11:40, 17:40, 23:40 UTC) NOAA GFS weltweit, 16 Tage; zusätzlich sofort nach
   Änderungen an `pipeline/daily.py`, `gfs.py`, `weather.py`. Tage vor dem ersten vollständigen lokalen Tag des
   neuen Laufs werden aus dem gespeicherten Lauf übernommen (`extend_back`), damit „heute“ nicht wegfällt.
-- Alle Daten-Workflows führen vorher die Unit-Tests `pipeline/tests/` aus (Datumsberechnung je Zeitzone u. a.).
+- Alle Daten-Workflows führen vorher die Unit-Tests `pipeline/tests/` aus (Datumsberechnung je Zeitzone u. a.) und
+  spielen die Migrationen ein (sonst Wettlauf mit der Veröffentlichung bei Schemaänderungen).
 - `weather-openmeteo.yml`: täglich 04:15 UTC Open-Meteo für Mitteleuropa (Box 43–56° N, 2–20° O, max. 8.000 Punkte).
 - `deploy-netlify.yml`: bei jedem Push auf `main`: SQL-Migrationen (`python -m pipeline migrate`, idempotent), Netlify
   (Secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`), danach `e2e.yml`.

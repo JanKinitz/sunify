@@ -26,6 +26,10 @@ jobs:
       - run: pip install -r pipeline/requirements.txt
       - name: Prüfungen der Datenaufbereitung (Unit-Tests)
         run: python -m unittest discover -s pipeline/tests -t .
+      - name: Datenbank-Schema aktualisieren (Migrationen, idempotent)
+        run: python -m pipeline migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Open-Meteo laden und speichern
         run: python -m pipeline weather-om
         env:

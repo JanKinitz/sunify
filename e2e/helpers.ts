@@ -2,7 +2,7 @@
 // Die App hat zwei Layouts: Desktop (ab 1024 px, Filter links, Liste rechts) und Mobil
 // (Filter und Liste als Vollbild-/Bottom-Sheet). Die Helfer verbergen diesen Unterschied.
 
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 
 /** Mobiles Layout? (Tailwind-Breakpoint lg = 1024 px) */
 export function isMobile(page: Page): boolean {
@@ -83,5 +83,34 @@ export function berlinDate(days = 0): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** Suche, die meist Fast-Treffer liefert (Flexibel, mittlere Ansprüche) */
-export const NEAR_SEARCH = "o=muenchen&r=300&d=weekend&t=10&p=dry&w=20&sun=3&c=all&tol=2";
+/**
+ * Suche, die sicher Fast-Treffer liefert – passend zum aktuellen Wetter: Die Mindesttemperatur wird so gewählt,
+ * dass ein Teil der Orte morgen knapp (bis 2 °C) darunter liegt; mit „Etwas flexibel“ sind das Fast-Treffer.
+ */
+export async function nearSearchQuery(request: APIRequestContext): Promise<string> {
+  const res = await request.post("/api/search", {
+    timeout: 60_000,
+    data: {
+      originLat: 48.1372,
+      originLon: 11.5756,
+      radiusKm: 300,
+      startDate: berlinDate(1),
+      endDate: berlinDate(1),
+      criteria: { minTempMax: -60, maxPrecipitationSum: null, maxWindSpeed: 500, minSunshineHours: 0 },
+      tolerance: 0,
+      category: "all",
+      limit: 100,
+      favoriteIds: [],
+    },
+  });
+  const json = await res.json();
+  const day = berlinDate(1);
+  const temps: number[] = [];
+  for (const d of json.destinations as { gridId: number; tempCorrection: number }[]) {
+    const f = (json.forecasts[String(d.gridId)] ?? []).find((x: { date: string }) => x.date === day);
+    if (f) temps.push(f.tempMax + d.tempCorrection);
+  }
+  temps.sort((a, b) => a - b);
+  const threshold = Math.ceil(temps[Math.floor(temps.length * 0.6)] ?? 10);
+  return `o=muenchen&r=300&d=tomorrow&t=${threshold}&p=any&w=60&sun=0&c=all&tol=1`;
+}

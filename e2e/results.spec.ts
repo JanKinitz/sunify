@@ -1,6 +1,6 @@
 // C – Ergebnisse, Detailansicht, Merkliste, Teilen (siehe e2e/TESTFAELLE.md)
 import { expect, test } from "@playwright/test";
-import { berlinDate, BROAD_SEARCH, IMPOSSIBLE_SEARCH, isMobile, NEAR_SEARCH, nextSearch, openApp, openResults, originInput, waitForSearchDone } from "./helpers";
+import { berlinDate, BROAD_SEARCH, IMPOSSIBLE_SEARCH, isMobile, nearSearchQuery, nextSearch, openApp, openResults, originInput, waitForSearchDone } from "./helpers";
 
 test.describe("C Ergebnisse", () => {
   test("C1 Ergebnisliste mit Karten und Sortierung", async ({ page }) => {
@@ -85,12 +85,12 @@ test.describe("C Ergebnisse", () => {
     await expect(originInput(page)).toHaveValue("Frankfurt am Main");
   });
 
-  test("C7 Fast-Treffer nennen in der Liste den Grund", async ({ page }) => {
-    await openApp(page, NEAR_SEARCH);
+  test("C7 Fast-Treffer nennen in der Liste den Grund", async ({ page, request }) => {
+    await openApp(page, await nearSearchQuery(request));
     await waitForSearchDone(page);
     const list = await openResults(page);
     const near = list.getByTestId("result-card").filter({ hasText: "Fast-Treffer:" });
-    test.skip((await near.count()) === 0, "Bei diesem Wetter gibt es gerade keine Fast-Treffer");
+    await expect(near.first()).toBeVisible();
     const reasons = near.first().getByTestId("near-reasons");
     await expect(reasons).toBeVisible();
     await expect(reasons.locator("li").first()).toHaveText(/^≈ (Mo|Di|Mi|Do|Fr|Sa|So): .+ statt (mind\.|max\.) /);
