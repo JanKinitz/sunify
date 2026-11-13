@@ -1,0 +1,65 @@
+# Testbibliothek (Playwright): alle Testfälle aus e2e/TESTFAELLE.md in drei Ansichten
+# (Desktop-Chrome, Android/Pixel 7, iPhone/Safari). Läuft automatisch nach jeder Veröffentlichung
+# und auf Knopfdruck (Actions → "Tests (alle Ansichten)" → Run workflow).
+name: Tests (alle Ansichten)
+
+on:
+  workflow_call:
+    inputs:
+      url:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Adresse der App
+        type: string
+        default: https://sunify-app.netlify.app
+
+concurrency:
+  group: e2e
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      SUNIFY_URL: ${{ inputs.url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Abhängigkeiten installieren
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Browser installieren (Chrome, Safari/WebKit)
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Kurz warten, bis die neue Version überall ausgeliefert wird
+        run: sleep 20
+
+      - name: Alle Testfälle ausführen
+        run: npx playwright test
+
+      - name: Ergebnis zusammenfassen
+        if: always()
+        run: |
+          echo "### Tests gegen $SUNIFY_URL" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f e2e/results/.last-run.json ]; then
+            node -e 'const r=require("./e2e/results/.last-run.json");console.log(r.status==="passed"?"✅ Alle Testfälle bestanden":"❌ Fehlgeschlagen: "+(r.failedTests||[]).length+" Test(s) – Bericht unter Artifacts")' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Testbericht speichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testbericht
+          path: |
+            e2e/report
+            e2e/results
+          retention-days: 14

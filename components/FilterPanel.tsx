@@ -1,12 +1,11 @@
 "use client";
 
-// Screen 1: Such- & Filter-Cockpit (Standort, Radius, Zeitraum, Wetter-Parameter, Orts-Charakter).
+// Screen 1: Such- & Filter-Cockpit (Profile, Zeitraum, Wetter-Parameter, Toleranz, Orts-Charakter).
+// Startort und Suchradius stehen in der Top-Bar (StartBar.tsx).
 
-import { useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
   CloudRain,
-  LocateFixed,
   MapPin,
   RotateCcw,
   Sparkles,
@@ -14,10 +13,9 @@ import {
   Thermometer,
   Wind,
 } from "lucide-react";
-import { geocodePlaces } from "@/lib/geocode";
-import { fmtDist, fmtPrecip, fmtSpeed, fmtTempSpaced, formatDate, tr, trn } from "@/lib/i18n";
+import { fmtPrecip, fmtSpeed, fmtTempSpaced, formatDate, tr, trn } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-react";
-import { hasOrigin, POPULAR_ORIGINS } from "@/lib/origins";
+import { hasOrigin } from "@/lib/origins";
 import { anyTemp, anyWind } from "@/lib/categories";
 import { activeProfile, PROFILES } from "@/lib/profiles";
 import {
@@ -28,8 +26,7 @@ import {
   todayISO,
 } from "@/lib/dates";
 import { SUN_MAX, TEMP_MAX, TEMP_MIN, WIND_MAX, WIND_MIN } from "@/lib/filters";
-import { RADIUS_MAX, RADIUS_MIN, RADIUS_STEP } from "@/lib/search";
-import type { Category, DatePreset, Filters, Origin, PrecipMode, Tolerance } from "@/lib/types";
+import type { Category, DatePreset, Filters, PrecipMode, Tolerance } from "@/lib/types";
 import { tempColor, tempLabel, windLabel } from "@/lib/weather";
 
 interface FilterPanelProps {
@@ -155,169 +152,6 @@ function RangeField({
   );
 }
 
-function OriginField({
-  origin,
-  onSelect,
-  onNotify,
-}: {
-  origin: Origin;
-  onSelect: (origin: Origin) => void;
-  onNotify: (message: string) => void;
-}) {
-  const [query, setQuery] = useState(origin.name);
-  const [open, setOpen] = useState(false);
-  const [locating, setLocating] = useState(false);
-  const [remote, setRemote] = useState<Origin[] | null>(null);
-  const [searching, setSearching] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => setQuery(origin.name), [origin.name]);
-
-  useEffect(() => {
-    const close = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery(origin.name);
-      }
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [origin.name]);
-
-  const needle = query.trim().toLowerCase();
-  const isSearch = open && needle.length >= 2 && needle !== origin.name.toLowerCase();
-
-  // Live-Geocoding (Photon) mit kurzer Eingabe-Verzögerung
-  useEffect(() => {
-    if (!isSearch) {
-      setRemote(null);
-      setSearching(false);
-      return;
-    }
-    const controller = new AbortController();
-    setSearching(true);
-    const timer = window.setTimeout(() => {
-      geocodePlaces(needle, controller.signal)
-        .then((places) => {
-          setRemote(places);
-          setSearching(false);
-        })
-        .catch(() => {
-          if (controller.signal.aborted) return;
-          setRemote(null); // Rückfall auf die lokale Liste
-          setSearching(false);
-        });
-    }, 300);
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [isSearch, needle]);
-
-  const local =
-    needle === "" || needle === origin.name.toLowerCase()
-      ? POPULAR_ORIGINS
-      : POPULAR_ORIGINS.filter((o) => o.name.toLowerCase().includes(needle));
-  const suggestions = isSearch && remote !== null ? remote : local;
-
-  const pick = (o: Origin) => {
-    onSelect(o);
-    setQuery(o.name);
-    setOpen(false);
-  };
-
-  const locate = () => {
-    if (!("geolocation" in navigator)) {
-      onNotify(tr("Dein Browser unterstützt keine Standortabfrage."));
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false);
-        pick({
-          id: "gps",
-          name: tr("Mein Standort"),
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-        });
-        onNotify(tr("Standort übernommen 📍"));
-      },
-      () => {
-        setLocating(false);
-        onNotify(tr("Standort konnte nicht ermittelt werden – bitte Ort auswählen."));
-      },
-      { enableHighAccuracy: false, timeout: 8000 }
-    );
-  };
-
-  return (
-    <div ref={wrapRef} className="relative">
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-          <input
-            type="text"
-            value={query}
-            aria-label={tr("Startort")}
-            placeholder={tr("Startort eingeben …")}
-            autoComplete="off"
-            onFocus={(e) => {
-              setOpen(true);
-              e.target.select();
-            }}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOpen(true);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && suggestions.length > 0) pick(suggestions[0]);
-              if (e.key === "Escape") setOpen(false);
-            }}
-            className="w-full rounded-xl border border-ink-200 bg-ink-50 py-2.5 pl-9 pr-3 text-sm font-medium outline-none transition focus:border-sun-400 focus:bg-white focus:ring-2 focus:ring-sun-200"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={locate}
-          title={tr("GPS-Standort nutzen")}
-          aria-label={tr("GPS-Standort nutzen")}
-          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-700 transition hover:border-sun-400 hover:text-sun-600"
-        >
-          <LocateFixed className={`h-4 w-4 ${locating ? "animate-spin" : ""}`} />
-          <span className="hidden sm:inline lg:hidden xl:inline">GPS</span>
-        </button>
-      </div>
-      {open && (
-        <ul className="thin-scroll absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-xl border border-ink-100 bg-white py-1 shadow-lift">
-          {suggestions.length === 0 && (
-            <li className="px-3 py-2 text-sm text-ink-400">
-              {searching ? tr("Suche …") : tr("Kein Ort gefunden")}
-            </li>
-          )}
-          {suggestions.map((o) => (
-            <li key={o.id}>
-              <button
-                type="button"
-                onClick={() => pick(o)}
-                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-sun-50 ${
-                  o.id === origin.id ? "font-semibold text-sun-700" : "text-ink-800"
-                }`}
-              >
-                <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-300" />
-                <span className="truncate">
-                  {tr(o.name)}
-                  {o.detail && <span className="ml-1.5 text-xs font-normal text-ink-400">{o.detail}</span>}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
 export default function FilterPanel({
   filters,
   resultCount,
@@ -361,24 +195,6 @@ export default function FilterPanel({
           })}
         </div>
         <p className="mt-2 text-[11px] text-ink-400">{tr("Setzt passende Wetter-Filter – danach frei anpassbar.")}</p>
-      </Section>
-
-      {/* Standort & Radius */}
-      <Section icon={<MapPin className="h-4 w-4" />} title="Standort & Radius">
-        <OriginField origin={filters.origin} onSelect={(origin) => onChange({ origin })} onNotify={onNotify} />
-        <div className="mt-4">
-          <RangeField
-            label={tr("Suchradius")}
-            valueLabel={fmtDist(filters.radiusKm)}
-            min={RADIUS_MIN}
-            max={RADIUS_MAX}
-            step={RADIUS_STEP}
-            value={filters.radiusKm}
-            minLabel={fmtDist(RADIUS_MIN)}
-            maxLabel={fmtDist(RADIUS_MAX)}
-            onChange={(radiusKm) => onChange({ radiusKm })}
-          />
-        </div>
       </Section>
 
       {/* Zeitraum */}

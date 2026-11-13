@@ -1,8 +1,10 @@
-Sunify 2.0: leerer Startzustand und Suchstatus
+Sunify 2.0: Startleiste, Update-Hinweis und Testbibliothek
 
-Ohne Startort startet die App leer, alle Wetter-Regler stehen auf "egal".
-Waehrend eine Suche laeuft, zeigen Buttons und Legende "Suche laeuft ..."
-statt der alten Trefferzahl; die alte Liste wird abgeblendet.
+- Startort und Umkreis als erste Funktion in der Top-Bar, Freitext-Leiste entfernt
+- Nach einer Veroeffentlichung erkennt die App die neue Version und laedt neu
+  (im Hintergrund still, sonst mit Hinweis "Aktualisieren")
+- Testbibliothek (Playwright, e2e/TESTFAELLE.md): 34 Testfaelle in Desktop-,
+  Android- und iPhone-Ansicht, laeuft nach jeder Veroeffentlichung automatisch
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

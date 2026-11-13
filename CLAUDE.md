@@ -26,6 +26,17 @@ Vollständige Spezifikation: `SPEC.md` (nur lokal, nicht im öffentlichen Reposi
 6. **Affiliate:** Booking.com-Deep-Link mit Ort, Koordinaten, Check-in/Check-out in der App-Sprache
    (`utils/affiliateLinks.ts`). Einzelner Tag ⇒ Check-out = Start + 1 Tag.
 
+## Release-Ablauf (Pflicht)
+
+1. Änderung umsetzen, `npm run build` muss fehlerfrei sein.
+2. **Testbibliothek anpassen:** für jede neue oder geänderte Funktion Eintrag in `e2e/TESTFAELLE.md` (neue ID,
+   Änderungsliste unten ergänzen) und Test in `e2e/*.spec.ts`; entfallene Funktionen samt Test streichen.
+   Selektoren: Rollen/Beschriftungen bevorzugen, sonst `data-testid` (Layout-Bereiche siehe `e2e/helpers.ts`).
+3. Hochladen mit `save-v2.bat` → GitHub veröffentlicht bei Netlify und lässt danach **alle Tests in drei Ansichten**
+   (Desktop, Android, iPhone) laufen. Ein Release ist erst fertig, wenn dieser Lauf grün ist.
+4. Nach einer Veröffentlichung erkennt die offene App die neue Build-Kennung (`/api/version`) und lädt neu
+   (im Hintergrund still, sonst mit Hinweis „Aktualisieren“) – `components/UpdateNotice.tsx`.
+
 ## Architektur 2.0
 
 | Teil | Wo | Was |
@@ -38,7 +49,8 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
 - `db-setup.yml` (manuell, `run-db-setup.bat`): migrate → seed → weather-om → weather-gfs → status.
 - `weather-gfs.yml`: 4× täglich (05:40, 11:40, 17:40, 23:40 UTC) NOAA GFS weltweit, 16 Tage.
 - `weather-openmeteo.yml`: täglich 04:15 UTC Open-Meteo für Mitteleuropa (Box 43–56° N, 2–20° O, max. 8.000 Punkte).
-- `deploy-netlify.yml`: bei jedem Push auf `main` (Secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`).
+- `deploy-netlify.yml`: bei jedem Push auf `main` (Secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`), danach `e2e.yml`.
+- `e2e.yml`: Testbibliothek (Playwright) gegen die veröffentlichte Adresse; auch manuell oder per `run-tests.bat`.
 
 ## Daten
 
@@ -71,6 +83,8 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
   nur im Produktions-Build. Installieren-Button in der Top-Bar, sobald der Browser es anbietet.
 - **Aktivitätsprofile** (`lib/profiles.ts`): Wandern, Strand, Städtetrip, Rad, Wein, Wellness – setzen saisonale
   Filterwerte, danach frei anpassbar.
+- **Start-Leiste** (`components/StartBar.tsx`) in der Top-Bar: Startort (Eingabe/GPS) und Umkreis – die erste
+  Funktion auf Desktop und Handy. Eine Freitext-Suche gibt es nicht mehr (kommt ggf. mit der KI-Suche zurück).
 - **Startzustand:** kein Startort, alle Wetter-Regler auf „egal“ (Temperatur ganz links, Wind ganz rechts,
   Regen egal, 0 Std. Sonne); gesucht wird erst mit Startort. „Zurücksetzen“ behält den Startort.
 - Während eine Suche läuft (`pending`), zeigen Buttons und Legende „Suche läuft …“ statt der alten Trefferzahl,
@@ -88,12 +102,15 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
 | Pfad | Inhalt |
 |---|---|
 | `components/SunifyApp.tsx` | UI-State, Layout, Top-Bar mit Sprache/Einheiten/Installieren |
-| `components/FilterPanel.tsx` | Profile, Standort & Radius, Zeitraum, Wunschwetter, Toleranz, Orts-Charakter |
+| `components/StartBar.tsx` | Startort (Vorschläge, Geocoding, GPS) und Umkreis in der Top-Bar |
+| `components/FilterPanel.tsx` | Profile, Zeitraum, Wunschwetter, Toleranz, Orts-Charakter |
 | `components/ResultList.tsx` | Ergebniskarten mit Foto (`PhotoHeader`), Fast-Treffer-Abschnitt |
 | `components/DetailDrawer.tsx` | Detail mit Foto, Tages-Nachweis (ok/knapp/verfehlt), Conversion-Box |
 | `components/SettingsSwitch.tsx` | DE/EN, °C/°F, „App installieren“ |
 | `services/searchService.ts` | Validierung, `search_destinations_v2`, Prognosen je Raster, Lockerungsvorschläge |
 | `pipeline/` | Python: `seed.py`, `grid.py`, `scoring.py`, `wikidata.py`, `gfs.py`, `openmeteo.py`, `weather.py` |
+| `e2e/` | Testbibliothek: `TESTFAELLE.md` (Katalog), `*.spec.ts` (Playwright), `helpers.ts` |
+| `components/UpdateNotice.tsx` | Update-Erkennung nach neuen Veröffentlichungen |
 | `scripts/` | Einrichtungshilfen (GitHub-/Netlify-Secrets, Sicherheitsprüfung) |
 
 ## Windows-Hilfen (Doppelklick)
@@ -105,6 +122,7 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
 | `save-v2.bat` | Aktuellen Stand prüfen, committen und zu GitHub hochladen (löst Veröffentlichung aus) |
 | `run-db-setup.bat` | Datenbank 2.0 bei GitHub einrichten (1–3 h) |
 | `setup-netlify.bat` | Einmalig: Netlify-Website anlegen, Secrets setzen, erste Veröffentlichung |
+| `run-tests.bat` | Testbibliothek ausführen: online, lokal oder bei GitHub; öffnet den Bericht |
 
 ## Befehle
 
@@ -112,10 +130,11 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
 npm install        # Abhängigkeiten
 npm run dev        # Entwicklungsserver
 npm run build      # Produktions-Build inkl. Typprüfung
+npm run test:e2e   # Testbibliothek (SUNIFY_URL=… für die Online-Version), Bericht: npm run test:e2e:report
 python -m pipeline migrate|seed|weather-gfs|weather-om|status   # Datenjobs (braucht DATABASE_URL)
 ```
 
 ## Später
 
-- Wetter-Alarm (Benachrichtigung, wenn das Wunschwetter auftaucht) und echte KI-Freitextsuche
-  (`lib/aiParse.ts` → LLM mit Structured Output; Rückgabe-Struktur bleibt gleich).
+- Wetter-Alarm (Benachrichtigung, wenn das Wunschwetter auftaucht) und KI-Freitextsuche (LLM mit Structured
+  Output, liefert Teil-Filter; der frühere Regel-Parser `lib/aiParse.ts` liegt im Git-Verlauf).

@@ -14,7 +14,6 @@ import { useI18n } from "@/lib/i18n-react";
 import { hasOrigin, originLabel } from "@/lib/origins";
 import { describeDestination, sortResults } from "@/lib/search";
 import type { Destination, Filters, SearchResult, SortKey } from "@/lib/types";
-import AiSearchBar from "./AiSearchBar";
 import DetailDrawer from "./DetailDrawer";
 import EmptyState from "./EmptyState";
 import FavoritesDrawer from "./FavoritesDrawer";
@@ -22,6 +21,7 @@ import FilterPanel from "./FilterPanel";
 import MapView, { type MapFocusRequest } from "./MapView";
 import ResultList, { SortSelect } from "./ResultList";
 import { InstallButton, SettingsSwitch } from "./SettingsSwitch";
+import StartBar from "./StartBar";
 
 const FAVORITES_KEY = "sunify:favorites";
 
@@ -279,7 +279,7 @@ export default function SunifyApp() {
   const listHeader = (
     <div className="flex items-center justify-between gap-2">
       <div className="min-w-0">
-        <h2 className="flex items-center gap-2 truncate text-[15px] font-bold text-ink-900">
+        <h2 data-testid="list-title" className="flex items-center gap-2 truncate text-[15px] font-bold text-ink-900">
           <span className="truncate">
             {noOrigin
               ? tr("Wo soll’s losgehen?")
@@ -313,18 +313,21 @@ export default function SunifyApp() {
   );
 
   const listBody = noOrigin ? (
-    <div className="rounded-2xl border border-ink-100 bg-white p-5 text-center shadow-soft">
+    <div data-testid="welcome" className="rounded-2xl border border-ink-100 bg-white p-5 text-center shadow-soft">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-sun-50 text-sun-600">
         <MapPin className="h-7 w-7" />
       </div>
       <h3 className="mt-3 text-lg font-bold text-ink-900">{tr("Wo soll’s losgehen?")}</h3>
       <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-ink-600">
-        {tr("Gib einen Startort ein oder nutze GPS. Wähle dann Zeitraum und Wunschwetter – Sunify zeigt dir, wo es passt.")}
+        {tr("Gib oben einen Startort ein oder nutze GPS und wähle den Umkreis. Zeitraum und Wunschwetter stellst du unter „Filter“ ein.")}
       </p>
       <button
         type="button"
-        onClick={() => setMobileFilters(true)}
-        className="mt-4 rounded-xl bg-sun-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sun-600 lg:hidden"
+        onClick={() => {
+          setSheetOpen(false);
+          document.getElementById("sunify-origin")?.focus();
+        }}
+        className="mt-4 rounded-xl bg-sun-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sun-600"
       >
         {tr("Startort wählen")}
       </button>
@@ -389,8 +392,9 @@ export default function SunifyApp() {
             </div>
           </div>
 
-          <div className="order-3 w-full lg:order-2 lg:w-auto lg:flex-1">
-            <AiSearchBar onApply={update} />
+          {/* Startort und Suchradius: erste Funktion auf dem Startbildschirm */}
+          <div className="order-3 w-full lg:order-2 lg:mx-auto lg:w-auto lg:max-w-2xl lg:flex-1">
+            <StartBar filters={filters} onChange={update} onNotify={notify} />
           </div>
 
           <div className="order-2 ml-auto flex h-10 shrink-0 items-center gap-2 lg:order-3">
@@ -430,7 +434,7 @@ export default function SunifyApp() {
       {/* ------------------------------------------------------------------ */}
       <main className="relative flex min-h-0 flex-1 overflow-clip">
         {/* Filter-Cockpit (Desktop) */}
-        <aside className="thin-scroll hidden w-[330px] shrink-0 overflow-y-auto border-r border-ink-100 bg-ink-50 lg:block xl:w-[350px]">
+        <aside data-testid="filters-desktop" className="thin-scroll hidden w-[330px] shrink-0 overflow-y-auto border-r border-ink-100 bg-ink-50 lg:block xl:w-[350px]">
           <FilterPanel
             filters={filters}
             resultCount={pending ? null : results.length}
@@ -457,7 +461,7 @@ export default function SunifyApp() {
 
           {/* Karten-Legende */}
           <div className="pointer-events-none absolute left-3 top-3 z-[1000] flex flex-col items-start gap-2">
-            <div className="rounded-xl bg-white/95 px-3 py-2 text-xs shadow-soft backdrop-blur">
+            <div data-testid="map-legend" className="rounded-xl bg-white/95 px-3 py-2 text-xs shadow-soft backdrop-blur">
               <div className="font-bold text-ink-900">
                 {statusLabel} · {rangeLabel}
               </div>
@@ -484,6 +488,7 @@ export default function SunifyApp() {
           {/* Mobile: Filter-Button */}
           <button
             type="button"
+            data-testid="open-filters"
             onClick={() => setMobileFilters(true)}
             className="absolute right-3 top-3 z-[1000] flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-ink-900 shadow-lift lg:hidden"
           >
@@ -494,6 +499,7 @@ export default function SunifyApp() {
           {!sheetOpen && (
             <button
               type="button"
+              data-testid="show-list"
               onClick={() => setSheetOpen(true)}
               className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[1000] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-lift transition active:scale-95 lg:hidden"
             >
@@ -504,7 +510,7 @@ export default function SunifyApp() {
         </section>
 
         {/* Ergebnisliste (Desktop) */}
-        <aside className="hidden min-w-[360px] flex-col border-l border-ink-100 bg-ink-50 lg:flex lg:flex-[2]">
+        <aside data-testid="results-desktop" className="hidden min-w-[360px] flex-col border-l border-ink-100 bg-ink-50 lg:flex lg:flex-[2]">
           <div className="shrink-0 border-b border-ink-100 bg-white px-4 py-3">{listHeader}</div>
           <div className="thin-scroll flex-1 overflow-y-auto p-4">{listBody}</div>
         </aside>
@@ -513,6 +519,7 @@ export default function SunifyApp() {
         {/* Mobile: ausziehbares Bottom-Sheet mit der Ergebnisliste          */}
         {/* ---------------------------------------------------------------- */}
         <div
+          data-testid="results-sheet"
           className={`absolute inset-x-0 bottom-0 z-20 flex h-[78%] flex-col rounded-t-3xl bg-ink-50 shadow-lift transition-transform duration-300 ease-out lg:hidden ${
             sheetOpen ? "translate-y-0" : "translate-y-full"
           }`}
@@ -531,6 +538,7 @@ export default function SunifyApp() {
           <div className="thin-scroll flex-1 overflow-y-auto p-3 pb-24">{listBody}</div>
           <button
             type="button"
+            data-testid="show-map"
             onClick={() => setSheetOpen(false)}
             className="absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-lift active:scale-95"
           >
@@ -540,7 +548,7 @@ export default function SunifyApp() {
 
         {/* Mobile: Filter-Cockpit als Vollbild-Sheet */}
         {mobileFilters && (
-          <div className="absolute inset-0 z-30 flex animate-slide-in-up flex-col bg-ink-50 lg:hidden">
+          <div data-testid="filters-sheet" className="absolute inset-0 z-30 flex animate-slide-in-up flex-col bg-ink-50 lg:hidden">
             <div className="flex shrink-0 items-center justify-between gap-2 border-b border-ink-100 bg-white px-4 py-3">
               <h2 className="flex items-center gap-2 text-base font-bold">
                 <SlidersHorizontal className="h-4 w-4 text-sun-600" /> {tr("Such- & Filter-Cockpit")}
@@ -571,6 +579,7 @@ export default function SunifyApp() {
             <div className="shrink-0 border-t border-ink-100 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <button
                 type="button"
+                data-testid="filters-apply"
                 onClick={() => setMobileFilters(false)}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-sun-500 px-4 py-3 text-sm font-bold text-white shadow-soft transition hover:bg-sun-600"
               >

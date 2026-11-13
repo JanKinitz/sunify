@@ -6,6 +6,7 @@
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
 import { I18nProvider } from "@/lib/i18n-react";
+import UpdateNotice from "./UpdateNotice";
 
 function Loading() {
   const en = typeof navigator !== "undefined" && !navigator.language.toLowerCase().startsWith("de");
@@ -23,12 +24,16 @@ export default function ClientRoot() {
   // Service Worker für die installierbare App (PWA); nur in der veröffentlichten Version
   useEffect(() => {
     if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    navigator.serviceWorker
+      .register("/sw.js", { updateViaCache: "none" })
+      .then((reg) => reg.update())
+      .catch(() => undefined);
   }, []);
 
   return (
     <I18nProvider>
       <SunifyApp />
+      <UpdateNotice />
     </I18nProvider>
   );
 }

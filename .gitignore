@@ -23,3 +23,7 @@ SPEC.md
 
 # Fehlerprotokolle der Hilfsskripte
 *-fehler.txt
+
+# Testberichte (Playwright)
+e2e/report/
+e2e/results/

@@ -20,3 +20,5 @@ app/api/cron
 supabase/migrations/20261111000001_init_schema.sql
 supabase/migrations/20261111000002_search_function.sql
 supabase/migrations/20261111000003_search_function_plan.sql
+components/AiSearchBar.tsx
+lib/aiParse.ts

@@ -20,6 +20,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      url: ${{ steps.smoke.outputs.url }}
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
@@ -49,13 +51,25 @@ jobs:
 
       - name: Bauen und veröffentlichen
         if: steps.check.outputs.ready == 'true'
+        env:
+          NEXT_PUBLIC_BUILD_ID: ${{ github.sha }}
         run: npx --yes netlify-cli@latest deploy --build --prod --site "$NETLIFY_SITE_ID" --message "GitHub ${GITHUB_SHA::7}"
 
       - name: Funktionstest
+        id: smoke
         if: steps.check.outputs.ready == 'true'
         run: |
           URL=$(npx --yes netlify-cli@latest api getSite --data "{\"site_id\":\"$NETLIFY_SITE_ID\"}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).ssl_url||JSON.parse(s).url))')
           echo "Adresse: $URL"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
           curl -fsS "$URL/api/status" | head -c 800 || echo "Status noch nicht abrufbar (Datenbank evtl. noch nicht eingerichtet)."
           echo
           echo "### Sunify 2.0 ist online: $URL" >> "$GITHUB_STEP_SUMMARY"
+
+  # Komplette Testbibliothek (e2e/) gegen die gerade veröffentlichte Version
+  tests:
+    needs: deploy
+    if: needs.deploy.outputs.url != ''
+    uses: ./.github/workflows/e2e.yml
+    with:
+      url: ${{ needs.deploy.outputs.url }}

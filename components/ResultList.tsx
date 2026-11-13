@@ -146,6 +146,7 @@ export function ResultCard({
 
   return (
     <article
+      data-testid="result-card"
       onMouseEnter={() => onHover(d.id)}
       onMouseLeave={() => onHover(null)}
       className={`group overflow-hidden rounded-2xl border bg-white transition ${

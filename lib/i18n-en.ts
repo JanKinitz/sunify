@@ -325,4 +325,9 @@ export const EN: Record<string, string> = {
   "Zur Karte": "To the map",
   "Kräftiger Wind": "Strong wind",
   "deinem Wunschwetter": "your perfect weather",
+  "Gib oben einen Startort ein oder nutze GPS und wähle den Umkreis. Zeitraum und Wunschwetter stellst du unter „Filter“ ein.":
+    "Enter a starting point above or use GPS, and choose the radius. Set dates and weather under “Filters”.",
+  "Eine neue Version von Sunify ist da.": "A new version of Sunify is available.",
+  "Aktualisieren": "Update",
+  "Später": "Later",
 };

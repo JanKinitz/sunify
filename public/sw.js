@@ -3,7 +3,7 @@
 // - Programmdateien (/_next/static) und Icons: aus dem Zwischenspeicher (Dateinamen ändern sich bei jedem Update)
 // - Suche (/api/…): immer live, nie zwischengespeichert – Wetterdaten müssen aktuell sein
 
-const VERSION = "sunify-v2";
+const VERSION = "sunify-v2.1";
 const SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {

@@ -75,7 +75,7 @@ export default function EmptyState({ filters, relaxations, onApply, onReset }: E
   const range = formatWeekdayRange(filters.startDate, filters.endDate);
 
   return (
-    <div className="animate-pop-in rounded-2xl border border-ink-100 bg-white p-5 text-center shadow-soft">
+    <div data-testid="empty-state" className="animate-pop-in rounded-2xl border border-ink-100 bg-white p-5 text-center shadow-soft">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-ink-100 text-ink-500">
         <CloudOff className="h-7 w-7" />
       </div>
