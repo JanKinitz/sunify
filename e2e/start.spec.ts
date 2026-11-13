@@ -66,6 +66,7 @@ test.describe("A Start", () => {
     await searched;
     await waitForSearchDone(page);
     await expect(page).toHaveURL(/n=Christchurch/);
-    await expect(page.getByTestId("map-legend")).toContainText(/\d+ Treffer|Keine Treffer/);
+    // Alle Wetter-Regler stehen auf „egal“: in 200 km um Christchurch muss es Orte mit Prognose geben
+    await expect(page.getByTestId("map-legend")).toContainText(/\d+ Treffer/);
   });
 });

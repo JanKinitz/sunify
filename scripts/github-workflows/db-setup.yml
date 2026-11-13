@@ -22,6 +22,10 @@ jobs:
           cache-dependency-path: pipeline/requirements.txt
       - name: Python-Pakete installieren
         run: pip install -r pipeline/requirements.txt
+
+      - name: Prüfungen der Datenaufbereitung (Unit-Tests)
+        run: python -m unittest discover -s pipeline/tests -t .
+
       - name: Schema anlegen
         run: python -m pipeline migrate
         env:

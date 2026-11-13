@@ -5,6 +5,13 @@ on:
   schedule:
     - cron: "40 5,11,17,23 * * *"
   workflow_dispatch:
+  # Nach Änderungen an der Aufbereitung sofort neu rechnen statt auf den nächsten Termin zu warten
+  push:
+    branches: [main]
+    paths:
+      - "pipeline/daily.py"
+      - "pipeline/gfs.py"
+      - "pipeline/weather.py"
 
 concurrency:
   group: weather
@@ -22,6 +29,8 @@ jobs:
           cache: pip
           cache-dependency-path: pipeline/requirements.txt
       - run: pip install -r pipeline/requirements.txt
+      - name: Prüfungen der Datenaufbereitung (Unit-Tests)
+        run: python -m unittest discover -s pipeline/tests -t .
       - name: GFS laden und speichern
         run: python -m pipeline weather-gfs
         env:

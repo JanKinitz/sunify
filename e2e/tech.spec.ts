@@ -97,4 +97,43 @@ test.describe("G Technik", () => {
     const best = Math.min(...durations);
     expect(best, `schnellste von 3 Suchen: ${best} ms`).toBeLessThan(8000);
   });
+
+  test("G8 Prognosen weltweit: in jeder Zeitzone Treffer für das Wochenende", async ({ request }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "Server-Prüfung einmal pro Lauf genügt");
+    // Wochenende wie in der App (Berliner Datum): Samstag und Sonntag dieser Woche, ab Samstag der laufende
+    const berlin = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Berlin" }));
+    const dow = berlin.getDay(); // 0 = Sonntag
+    const toSat = dow === 0 ? -1 : 6 - dow;
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const sat = new Date(berlin.getFullYear(), berlin.getMonth(), berlin.getDate() + toSat);
+    const sun = new Date(sat.getFullYear(), sat.getMonth(), sat.getDate() + 1);
+    const places = [
+      { name: "Christchurch (UTC+13)", lat: -43.53, lon: 172.64 },
+      { name: "Tokio (UTC+9)", lat: 35.68, lon: 139.76 },
+      { name: "Kapstadt (UTC+2)", lat: -33.92, lon: 18.42 },
+      { name: "Denver (UTC−7)", lat: 39.74, lon: -104.99 },
+      { name: "Honolulu (UTC−10)", lat: 21.31, lon: -157.86 },
+      { name: "Buenos Aires (UTC−3)", lat: -34.6, lon: -58.38 },
+    ];
+    for (const p of places) {
+      const res = await request.post("/api/search", {
+        timeout: 60_000,
+        data: {
+          originLat: p.lat,
+          originLon: p.lon,
+          radiusKm: 200,
+          startDate: iso(sat),
+          endDate: iso(sun),
+          criteria: { minTempMax: -60, maxPrecipitationSum: null, maxWindSpeed: 500, minSunshineHours: 0 },
+          tolerance: 0,
+          category: "all",
+          limit: 10,
+          favoriteIds: [],
+        },
+      });
+      expect(res.ok(), p.name).toBeTruthy();
+      const json = await res.json();
+      expect.soft(json.totalMatches, `${p.name}: Orte mit Prognose für ${iso(sat)}–${iso(sun)}`).toBeGreaterThan(0);
+    }
+  });
 });

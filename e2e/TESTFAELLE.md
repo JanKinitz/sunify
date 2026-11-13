@@ -24,7 +24,7 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | A2 | Startort aus den Vorschlägen wählen (München) | Suche startet, Feld zeigt „München“, Link enthält `o=muenchen`, Legende zeigt Trefferzahl, Startpunkt auf der Karte |
 | A3 | Umkreis in der Top-Bar auf 100 km stellen | neue Suche mit 100 km, Link enthält `r=100` |
 | A4 | GPS-Knopf (Position Konstanz) | Feld zeigt „Mein Standort“, Link enthält die gerundeten Koordinaten |
-| A5 | Beliebigen Ort weltweit suchen (Christchurch) | Vorschlag aus der Ortssuche, Suche startet, Link enthält den Namen |
+| A5 | Beliebigen Ort weltweit suchen (Christchurch) | Vorschlag aus der Ortssuche, Suche startet, Link enthält den Namen, mit allen Reglern auf „egal“ gibt es Treffer |
 
 ## B – Filter (`filters.spec.ts`)
 
@@ -85,6 +85,7 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | G5 | Server meldet neuere Version | Hinweis „Eine neue Version von Sunify ist da.“ mit „Aktualisieren“ |
 | G6 | Quellenangaben | Open-Meteo, NOAA GFS, GeoNames, Wikimedia Commons, OpenStreetMap unter der Liste |
 | G7 | Antwortzeit: breite Suche (München, 300 km) dreimal direkt an `/api/search` (nur Desktop-Lauf) | schnellste Antwort unter 8 s; Laufzeiten je Abfrageschritt stehen im Bericht |
+| G8 | Prognosen weltweit (Christchurch, Tokio, Kapstadt, Denver, Honolulu, Buenos Aires), Wochenende, alles „egal“ (nur Desktop-Lauf) | überall Treffer – fängt verschobene Tage in fernen Zeitzonen ab |
 
 ## Änderungen
 
@@ -93,3 +94,4 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | 13.11.2026 | 2.0 | Testbibliothek angelegt (A1–G6) |
 | 13.11.2026 | 2.0 | E1/E2: Sprach-/Einheitenschalter eindeutig ansprechen; G7 Antwortzeit neu; Zeitlimits für langsame Suchen erhöht |
 | 13.11.2026 | 2.0 | Suche beschleunigt (G7 war rot: 14–26 s für 300 km); keine Teständerung |
+| 13.11.2026 | 2.0 | Fehler: Tage in fernen Zeitzonen um einen Tag verschoben (Christchurch ohne Treffer). A5 verschärft, G8 neu; Unit-Tests der Datenaufbereitung in `pipeline/tests/` |

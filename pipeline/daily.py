@@ -113,7 +113,10 @@ def aggregate_gfs(
             wet_n = np.where(wet, 1, 0).sum(axis=0)
             out["snow"][di] = np.where(wet, snow, 0).sum(axis=0) / np.maximum(wet_n, 1)
 
-    init_local_dates = [(init_time + timedelta(hours=int(o))).date() for o in utc_offsets]
+    # day_index zählt ab Mitternacht des UTC-Init-Tages (siehe "local" oben) – also auch das Datum von dort
+    # aus berechnen. Früher wurde das lokale Init-Datum genommen: Wo lokal schon/noch ein anderer Tag war
+    # (z. B. Neuseeland beim 12Z-/18Z-Lauf, Amerika beim 00Z-Lauf), waren alle Tage um einen Tag verschoben.
+    init_date = init_time.date()
     results: list[Daily | None] = []
     for p in range(P):
         ok = out["cover"][:, p] >= MIN_COVERAGE_HOURS
@@ -128,7 +131,7 @@ def aggregate_gfs(
             end += 1
         end = min(end, start + max_days - 1)
         rng = range(start, end + 1)
-        base = init_local_dates[p] + timedelta(days=days[start])
+        base = init_date + timedelta(days=days[start])
         results.append(
             Daily(
                 start_date=base,
@@ -199,3 +202,25 @@ def trim_past(daily: Daily | None, today: date) -> Daily | None:
         daily.weather_code[cut:],
         (daily.precip_prob or [None] * len(daily))[cut:],
     )
+
+
+def extend_back(older: Daily | None, newer: Daily | None) -> Daily | None:
+    """Ein neuer GFS-Lauf beginnt erst mit dem ersten vollständigen lokalen Tag – je nach Zeitzone ist das
+    oft schon morgen. Damit "heute" (und dieses Wochenende) nicht wegfällt, werden die Tage davor aus dem
+    bisher gespeicherten Lauf übernommen, sofern sie lückenlos anschließen."""
+    if newer is None or older is None or len(older) == 0:
+        return newer
+    n = (newer.start_date - older.start_date).days
+    if n <= 0 or n > len(older):
+        return newer
+    return Daily(
+        older.start_date,
+        older.temp_max[:n] + list(newer.temp_max),
+        older.temp_min[:n] + list(newer.temp_min),
+        older.precip[:n] + list(newer.precip),
+        older.wind_max[:n] + list(newer.wind_max),
+        older.sunshine[:n] + list(newer.sunshine),
+        older.weather_code[:n] + list(newer.weather_code),
+        list((older.precip_prob or [None] * len(older))[:n]) + list(newer.precip_prob or [None] * len(newer)),
+    )
+

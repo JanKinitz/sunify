@@ -1,10 +1,15 @@
-Suche beschleunigt: Tageswerte je Ort in einem Durchgang
+Wetter: Tage in fernen Zeitzonen nicht mehr um einen Tag verschoben
 
-Die Messung im Test G7 zeigte 14-26 s fuer eine Suche mit 300 km, fast alles
-davon in search_destinations_v2. Die Funktion verband ihre Zwischentabelle mit
-sich selbst; jetzt werden die Tage je Ort per LATERAL in einem Durchgang
-ausgewertet (gleiche Ergebnisse). Die Veroeffentlichung spielt SQL-Migrationen
-kuenftig automatisch ein.
+Die Tagesauswertung der GFS-Daten zaehlte die Tage ab dem UTC-Datum des Laufs,
+setzte das Datum aber ab dem lokalen Datum. Wo lokal schon ein anderer Tag war
+(Neuseeland, Japan beim 12Z/18Z-Lauf, Amerika beim 00Z-Lauf), lagen alle Werte
+einen Tag daneben; Christchurch hatte fuer das Wochenende keine Prognose.
+
+- Datum korrekt ab dem UTC-Init-Tag
+- "Heute" bleibt aus dem vorigen Lauf erhalten, wenn ein neuer Lauf erst morgen beginnt
+- Unit-Tests der Datenaufbereitung (pipeline/tests), vor jedem Datenjob
+- GFS rechnet nach Aenderungen an der Aufbereitung sofort neu
+- Tests: A5 verlangt Treffer um Christchurch, G8 prueft sechs Zeitzonen
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

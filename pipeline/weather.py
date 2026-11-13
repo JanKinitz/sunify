@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta, timezone
 import numpy as np
 
 from . import gfs, openmeteo
-from .daily import Daily, merge, trim_past
+from .daily import Daily, extend_back, merge, trim_past
 
 STALE_AFTER = timedelta(hours=36)
 
@@ -84,8 +84,8 @@ def run_gfs(conn, log=print) -> dict:
     offs = np.array([g[5] for g in grid], dtype=np.int32)
     init, daily = gfs.daily_for_points(lats, lons, offs, log)
 
-    om_ids = [g[0] for g in grid if g[4] == "open-meteo"]
-    existing = _load_existing(conn, om_ids) if om_ids else {}
+    om_ids = {g[0] for g in grid if g[4] == "open-meteo"}
+    existing = _load_existing(conn, ids)
     today = datetime.now(timezone.utc).date()
     now = datetime.now(timezone.utc)
     rows, missing, kept_om = [], 0, 0
@@ -94,7 +94,10 @@ def run_gfs(conn, log=print) -> dict:
             missing += 1
             continue
         until, om_at = None, None
-        if gid in existing:
+        if gid in existing and gid not in om_ids:
+            # heutige Tage aus dem vorigen Lauf behalten, wenn der neue Lauf erst morgen beginnt
+            d = extend_back(trim_past(existing[gid][0], today), d)
+        if gid in existing and gid in om_ids:
             ex, ex_until, ex_om_at = existing[gid]
             fresh = ex_om_at is not None and now - ex_om_at <= STALE_AFTER
             primary = _cut_primary(ex, ex_until) if fresh else None
@@ -102,6 +105,8 @@ def run_gfs(conn, log=print) -> dict:
                 d, until = merge(trim_past(primary, today), d)
                 om_at = ex_om_at
                 kept_om += 1
+            else:
+                d = extend_back(trim_past(ex, today), d)
         d = trim_past(d, today)
         if d is not None and len(d) > 0:
             rows.append((gid, d, until, om_at))
