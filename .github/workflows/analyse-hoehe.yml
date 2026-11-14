@@ -1,0 +1,18 @@
+# Einmalige Auswertung der Höhenkorrektur (nur lesend). Läuft nur auf dem Branch analyse-hoehe.
+name: Analyse Höhenkorrektur
+on:
+  push:
+    branches: [analyse-hoehe]
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -r pipeline/requirements.txt
+      - run: python -m scripts.analysis.elevation_check
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
