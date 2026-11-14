@@ -4,7 +4,7 @@
 // Favoriten) und verdrahtet die Kern-Screens. Die Daten kommen von POST /api/search.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CircleHelp, CloudOff, Heart, Info, List, LoaderCircle, Map as MapIcon, MapPin, Share2, SlidersHorizontal, X } from "lucide-react";
+import { CircleHelp, CloudOff, Heart, Info, List, LoaderCircle, Map as MapIcon, MapPin, Share2, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { fetchSearch, type SearchData } from "@/lib/api";
 import { formatRange, formatWeekdayRange } from "@/lib/dates";
 import { defaultFilters, filtersFromQuery, filtersToQuery } from "@/lib/filters";
@@ -123,6 +123,14 @@ export default function SunifyApp() {
   const closeTour = useCallback(() => {
     markTourSeen();
     setTourOpen(false);
+  }, []);
+  // Logo/Schriftzug: komplett zurück auf Start – kein Startort, keine Filter, auch keine Start-Vorlage
+  const goHome = useCallback(() => {
+    setFilters(defaultFilters());
+    setSelectedId(null);
+    setSheetOpen(false);
+    setMobileFilters(false);
+    setShowFavorites(false);
   }, []);
   const [toast, setToast] = useState<string | null>(null);
   const [mapFocus, setMapFocus] = useState<MapFocusRequest | null>(null);
@@ -328,6 +336,17 @@ export default function SunifyApp() {
   // Filter geändert, neue Antwort steht noch aus: alte Trefferzahl nicht mehr anzeigen
   const pending = !noOrigin && (loading || (data !== null && data.filters !== filters));
   const statusLabel = noOrigin ? tr("Startort wählen") : pending ? tr("Suche läuft …") : countLabel;
+  // Fertige Suche ohne einen einzigen Treffer: Vorschläge zum Lockern zeigen
+  const noResults = !noOrigin && !pending && data !== null && results.length === 0;
+
+  // Auf dem Handy liegt die Liste im eingeklappten Sheet – bei 0 Treffern direkt aufklappen, damit die
+  // 1-Klick-Lockerungen sichtbar sind (einmal je Suchergebnis; danach darf man es wieder schließen)
+  const autoOpenedFor = useRef<SearchData | null>(null);
+  useEffect(() => {
+    if (!noResults || !data || autoOpenedFor.current === data) return;
+    autoOpenedFor.current = data;
+    if (window.matchMedia("(max-width: 1023px)").matches) setSheetOpen(true);
+  }, [noResults, data]);
 
   const listHeader = (
     <div className="flex items-center justify-between gap-2">
@@ -462,7 +481,14 @@ export default function SunifyApp() {
       {/* ------------------------------------------------------------------ */}
       <header className="relative z-30 shrink-0 bg-ink-900 px-3 pb-2.5 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-lift sm:px-5">
         <div className="flex flex-wrap items-start gap-x-4 gap-y-2.5 lg:flex-nowrap">
-          <div className="flex h-10 shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={goHome}
+            title={tr("Zur Startseite – alles zurücksetzen")}
+            aria-label={tr("Zur Startseite – alles zurücksetzen")}
+            data-testid="home"
+            className="flex h-10 shrink-0 items-center gap-2 rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-sun-400"
+          >
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sun-300 to-sun-600 text-xl shadow-soft">
               ☀️
             </span>
@@ -470,7 +496,7 @@ export default function SunifyApp() {
               <div className="text-lg font-extrabold tracking-tight">Sunify</div>
               <div className="hidden text-[11px] text-ink-300 sm:block">{tr("Finde dein Wunschwetter")}</div>
             </div>
-          </div>
+          </button>
 
           {/* Startort und Suchradius: erste Funktion auf dem Startbildschirm */}
           <div className="order-3 w-full lg:order-2 lg:mx-auto lg:w-auto lg:max-w-2xl lg:flex-1">
@@ -597,8 +623,18 @@ export default function SunifyApp() {
               onClick={() => setSheetOpen(true)}
               className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[1000] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-lift transition active:scale-95 lg:hidden"
             >
-              {pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <List className="h-4 w-4" />}{" "}
-              {pending || noOrigin ? tr("Liste anzeigen") : tr("Liste anzeigen ({count})", { count: countLabel })}
+              {pending ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : noResults ? (
+                <Sparkles className="h-4 w-4 text-sun-300" />
+              ) : (
+                <List className="h-4 w-4" />
+              )}{" "}
+              {pending || noOrigin
+                ? tr("Liste anzeigen")
+                : noResults
+                  ? tr("Keine Treffer – Vorschläge ansehen")
+                  : tr("Liste anzeigen ({count})", { count: countLabel })}
             </button>
           )}
         </section>

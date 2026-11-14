@@ -388,8 +388,10 @@ export const EN: Record<string, string> = {
   "Los geht's": "Let's go",
   "Schritt {n} von {total}": "Step {n} of {total}",
   "1. Startort wählen": "1. Choose a starting point",
-  "Tippe einen Ort ein oder nutze 📍 für deinen aktuellen Standort. Von hier aus sucht Sunify.":
-    "Type a place or tap 📍 to use your current location. Sunify searches from here.",
+  "Tippe einen Ort ein oder tippe auf {gps}, um deinen aktuellen Standort zu verwenden. Von hier aus sucht Sunify.":
+    "Type a place or tap {gps} to use your current location. Sunify searches from here.",
+  "Zur Startseite – alles zurücksetzen": "Back to start – reset everything",
+  "Keine Treffer – Vorschläge ansehen": "No matches – see suggestions",
   "2. Umkreis festlegen": "2. Set the radius",
   "Wie weit darf es höchstens sein? Gemessen wird in Luftlinie vom Startort.":
     "How far are you willing to go? Measured as the crow flies from your starting point.",

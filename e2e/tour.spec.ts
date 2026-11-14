@@ -16,6 +16,9 @@ test.describe("I Einführung", () => {
     // Schritt 1 markiert das Startort-Feld
     await expect(card(page)).toContainText("Schritt 1 von 5");
     await expect(card(page)).toContainText("Startort wählen");
+    // im Text steht das echte GPS-Symbol des Knopfs, keine Pinnadel
+    await expect(card(page).getByTestId("tour-gps-icon")).toBeVisible();
+    await expect(card(page)).not.toContainText("📍");
     const spot = await page.getByTestId("tour-spotlight").boundingBox();
     const field = await originInput(page).boundingBox();
     expect(spot && field).toBeTruthy();

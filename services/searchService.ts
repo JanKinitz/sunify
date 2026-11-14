@@ -152,16 +152,18 @@ async function findRelaxations(db: Queryable, r: SearchRequest): Promise<Relaxat
   type Candidate = { id: Relaxation["id"]; changed: SearchRequest; patch: Relaxation["patch"]; rank: number };
   const candidates: Candidate[] = [];
 
+  // Toleranz zuerst einreihen (der Pool arbeitet der Reihe nach ab): „Etwas flexibel“ bzw. „Flexibel“
+  // soll als Vorschlag möglichst immer dabei sein, wenn es damit Orte gibt – auch knapp vor dem Zeitbudget.
+  for (let tolerance = r.tolerance + 1; tolerance <= 2; tolerance++) {
+    const t = tolerance as Tolerance;
+    candidates.push({ id: "tolerance", changed: { ...r, tolerance: t }, patch: { tolerance: t }, rank: t });
+  }
+
   // 1) Radius erweitern: kleinste Erweiterung mit Treffern gewinnt
   for (const extra of [100, 200, 300]) {
     const radiusKm = Math.min(RADIUS_MAX, r.radiusKm + extra);
     if (radiusKm <= r.radiusKm || candidates.some((c) => c.id === "radius" && c.changed.radiusKm === radiusKm)) continue;
     candidates.push({ id: "radius", changed: { ...r, radiusKm }, patch: { radiusKm }, rank: extra });
-  }
-  // 2) Toleranz erhöhen
-  if (r.tolerance < 2) {
-    const tolerance = (r.tolerance + 1) as Tolerance;
-    candidates.push({ id: "tolerance", changed: { ...r, tolerance }, patch: { tolerance }, rank: 0 });
   }
   // 3) Temperatur senken: kleinste Senkung mit Treffern gewinnt (höchstens bis -5 °C)
   if (r.minTemp > -5) {

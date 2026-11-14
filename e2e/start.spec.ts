@@ -1,6 +1,6 @@
 // A – Startbildschirm, Startort und Umkreis (siehe e2e/TESTFAELLE.md)
 import { expect, test } from "@playwright/test";
-import { chooseOrigin, chooseRadius, isMobile, nextSearch, openApp, openFilters, openResults, originInput, waitForSearchDone } from "./helpers";
+import { BROAD_SEARCH, chooseOrigin, chooseRadius, isMobile, nextSearch, openApp, openFilters, openResults, originInput, waitForSearchDone } from "./helpers";
 
 test.describe("A Start", () => {
   test("A1 Startseite lädt leer: kein Startort, keine Suche, Regler auf „Egal“", async ({ page }) => {
@@ -68,5 +68,32 @@ test.describe("A Start", () => {
     await expect(page).toHaveURL(/n=Christchurch/);
     // Alle Wetter-Regler stehen auf „egal“: in 200 km um Christchurch muss es Orte mit Prognose geben
     await expect(page.getByTestId("map-legend")).toContainText(/\d+ Treffer/);
+  });
+
+  test("A6 Platzhalter im Startort-Feld wird nicht abgeschnitten", async ({ page }) => {
+    await openApp(page);
+    const expected = isMobile(page) ? "Startort" : "Startort eingeben …";
+    await expect(originInput(page)).toHaveAttribute("placeholder", expected);
+    // Text passt ins Feld (scrollWidth würde bei abgeschnittenem Platzhalter nichts zeigen – daher Breite messen)
+    const fits = await originInput(page).evaluate((el: HTMLInputElement) => {
+      const style = getComputedStyle(el);
+      const c = document.createElement("canvas").getContext("2d")!;
+      c.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      const free = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      return c.measureText(el.placeholder).width <= free;
+    });
+    expect(fits, "Platzhalter passt ins Feld").toBe(true);
+  });
+
+  test("A7 Klick auf Logo/Schriftzug setzt alles zurück", async ({ page }) => {
+    await openApp(page, BROAD_SEARCH.replace("t=-5", "t=10").replace("p=any", "p=dry"));
+    await waitForSearchDone(page);
+    await expect(originInput(page)).toHaveValue("München");
+    await page.getByTestId("home").click();
+    await expect(originInput(page)).toHaveValue("");
+    await expect(page.getByTestId("map-legend")).toContainText("Startort wählen");
+    await expect(page).not.toHaveURL(/o=muenchen/);
+    await expect(page).not.toHaveURL(/t=10/);
+    await expect(page).not.toHaveURL(/p=dry/);
   });
 });

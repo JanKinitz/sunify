@@ -21,6 +21,8 @@ Vollständige Spezifikation: `SPEC.md` (nur lokal, nicht im öffentlichen Reposi
    Volle Treffer stehen immer vor Fast-Treffern (`strict_match`, dann `match_pct`, dann Tourismus-Score).
 4. **Nie eine leere Ergebnisseite:** Smart Empty State mit 1-Klick-Lockerungen inkl. Trefferzahl
    (Radius, Toleranz, Temperatur, Regen, Sonne, Wind, Orts-Charakter). Texte entstehen im Client.
+   Toleranz („Etwas flexibel“, „Flexibel“) wird zuerst geprüft, damit sie im Zeitbudget sicher dabei ist.
+   Auf dem Handy klappt die Liste bei 0 Treffern von selbst auf (einmal je Ergebnis).
 5. **Zugangsdaten** nur in `.env.local` bzw. als GitHub-/Netlify-Secrets. Nie ausgeben, nie committen.
    Vor jedem Commit läuft `scripts/git-safety-check.mjs`. Das Repository ist **öffentlich**.
 6. **Affiliate:** Booking.com-Deep-Link mit Ort, Koordinaten, Check-in/Check-out in der App-Sprache
@@ -110,6 +112,8 @@ Workflows (`.github/workflows/`; Kopie in `scripts/github-workflows/`, beide gle
   mit abgedunkelter Seite, Markierung und Pfeil (Startort, Umkreis, Filter, Ergebnisse, Meine Suchen; Ziele per
   `data-tour`/`data-testid`, Handy-Ziele als Ausweichziel). Merker `localStorage` `sunify:tour`; „?“ in der Top-Bar
   startet sie erneut. Tests: `openApp` markiert sie als gesehen, nur `{ tour: true }` zeigt sie.
+- **Logo/Schriftzug** in der Top-Bar (`data-testid="home"`): komplett zurück auf Start – kein Startort, alle Filter
+  auf Standard, keine Start-Vorlage, offene Ansichten zu.
 - **Startzustand:** kein Startort (außer es gibt eine Start-Vorlage), alle Wetter-Regler auf „egal“ (Temperatur ganz links, Wind ganz rechts,
   Regen egal, 0 Std. Sonne); gesucht wird erst mit Startort. „Zurücksetzen“ behält den Startort.
 - Während eine Suche läuft (`pending`), zeigen Buttons und Legende „Suche läuft …“ statt der alten Trefferzahl,
@@ -168,8 +172,7 @@ python -m pipeline migrate|seed|weather-gfs|weather-om|status   # Datenjobs (bra
 
 ## Backlog (bei der nächsten Änderung mit erledigen)
 
-- Bereits lokal committet, noch nicht hochgeladen: `save-v2.bat` holt zuerst den neuesten Stand, neuer
-  Hochlade-Ablauf in dieser Datei. Mit der nächsten Änderung (nach Bestätigung) mit hochladen.
+- (leer)
 
 ## Später
 

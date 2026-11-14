@@ -1,4 +1,10 @@
-Hochladen direkt durch Claude, save-v2.bat holt vorher den neuesten Stand
+Handy: Vorschlaege bei 0 Treffern direkt zeigen; Logo, Platzhalter, GPS-Symbol
+
+- Bei 0 Treffern klappt die Liste auf dem Handy von selbst auf (Vorschlaege sichtbar),
+  zugeklappt heisst der Knopf "Keine Treffer - Vorschlaege ansehen" (Test F6)
+- Toleranz-Vorschlag prueft "Etwas flexibel" und "Flexibel" zuerst
+- Klick auf Logo/Schriftzug: komplett zurueck auf Start (A7)
+- Startort-Feld auf dem Handy nur "Startort" (A6), Tour zeigt GPS-Symbol (I1)
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

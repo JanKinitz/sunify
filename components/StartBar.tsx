@@ -34,6 +34,15 @@ export function OriginField({
 
   useEffect(() => setQuery(shown), [shown]);
 
+  // Auf schmalen Bildschirmen ist das Feld kurz: dort nur „Startort“, sonst wird der Text abgeschnitten
+  const [narrow, setNarrow] = useState(() => window.matchMedia("(max-width: 639px)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const onChange = () => setNarrow(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
   useEffect(() => {
     const close = (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
@@ -122,7 +131,7 @@ export function OriginField({
             type="text"
             value={query}
             aria-label={tr("Startort")}
-            placeholder={tr("Startort eingeben …")}
+            placeholder={narrow ? tr("Startort") : tr("Startort eingeben …")}
             autoComplete="off"
             onFocus={(e) => {
               setOpen(true);

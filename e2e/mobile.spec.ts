@@ -1,6 +1,6 @@
 // F – Handy-Bedienung und Layout (siehe e2e/TESTFAELLE.md)
 import { expect, test } from "@playwright/test";
-import { BROAD_SEARCH, isMobile, openApp, openFilters, waitForSearchDone } from "./helpers";
+import { BROAD_SEARCH, IMPOSSIBLE_SEARCH, isMobile, openApp, openFilters, waitForSearchDone } from "./helpers";
 
 test.describe("F Mobil & Layout", () => {
   test("F1 Bottom-Sheet: Liste öffnen und zurück zur Karte", async ({ page }) => {
@@ -50,5 +50,18 @@ test.describe("F Mobil & Layout", () => {
       expect(box, "Element sichtbar").not.toBeNull();
       expect(Math.min(box!.width, box!.height)).toBeGreaterThanOrEqual(32);
     }
+  });
+
+  test("F6 Keine Treffer: Liste klappt von selbst auf und zeigt die Vorschläge", async ({ page }) => {
+    test.skip(!isMobile(page), "nur Handy-Ansicht");
+    await openApp(page, IMPOSSIBLE_SEARCH);
+    await waitForSearchDone(page);
+    const sheet = page.getByTestId("results-sheet");
+    await expect(sheet).toHaveAttribute("aria-hidden", "false");
+    await expect(sheet.getByTestId("empty-state")).toBeVisible();
+    // zugeklappt: der Knopf weist auf die Vorschläge hin, statt „0 Treffer“ zu zeigen
+    await page.getByTestId("show-map").click();
+    await expect(sheet).toHaveAttribute("aria-hidden", "true");
+    await expect(page.getByTestId("show-list")).toContainText("Keine Treffer – Vorschläge ansehen");
   });
 });

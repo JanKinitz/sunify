@@ -6,6 +6,7 @@
 // Gesehen-Merker im Browser (`sunify:tour`); über „?“ in der Top-Bar jederzeit erneut.
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { LocateFixed } from "lucide-react";
 import { tr } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-react";
 
@@ -40,7 +41,7 @@ const STEPS: Step[] = [
   {
     targets: ['[data-tour="origin"]'],
     title: "1. Startort wählen",
-    body: "Tippe einen Ort ein oder nutze 📍 für deinen aktuellen Standort. Von hier aus sucht Sunify.",
+    body: "Tippe einen Ort ein oder tippe auf {gps}, um deinen aktuellen Standort zu verwenden. Von hier aus sucht Sunify.",
   },
   {
     targets: ['[data-tour="radius"]'],
@@ -65,6 +66,25 @@ const STEPS: Step[] = [
     body: "Speichere Startort, Umkreis und Filter als Vorlage – beim nächsten Mal wählst du nur noch den Zeitraum.",
   },
 ];
+
+/** Text mit Platzhalter {gps}: an dieser Stelle steht das echte Symbol des GPS-Knopfs */
+function withIcons(text: string) {
+  const parts = text.split("{gps}");
+  return parts.map((part, i) => (
+    <span key={i}>
+      {part}
+      {i < parts.length - 1 && (
+        <span
+          data-testid="tour-gps-icon"
+          className="mx-0.5 inline-flex items-center gap-1 rounded-md bg-ink-900 px-1.5 py-0.5 align-middle text-[11px] font-semibold text-white"
+        >
+          <LocateFixed className="h-3.5 w-3.5" aria-hidden />
+          GPS
+        </span>
+      )}
+    </span>
+  ));
+}
 
 const PAD = 6;
 const GAP = 14;
@@ -230,7 +250,7 @@ export default function OnboardingTour({ onClose }: { onClose: () => void }) {
               {tr("Schritt {n} von {total}", { n: step, total: STEPS.length })}
             </div>
             <h2 className="text-base font-bold">{title}</h2>
-            <p className="mt-1.5 text-[13.5px] leading-snug text-ink-600">{body}</p>
+            <p className="mt-1.5 text-[13.5px] leading-snug text-ink-600">{body && withIcons(body)}</p>
             <div className="mt-4 flex items-center justify-between gap-2">
               <button type="button" onClick={onClose} className="min-h-10 px-1 text-sm text-ink-400 hover:text-ink-700">
                 {tr("Überspringen")}

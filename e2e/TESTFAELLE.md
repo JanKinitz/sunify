@@ -25,6 +25,8 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | A3 | Umkreis in der Top-Bar auf 100 km stellen | neue Suche mit 100 km, Link enthält `r=100` |
 | A4 | GPS-Knopf (Position Konstanz) | Feld zeigt „Mein Standort“, Link enthält die gerundeten Koordinaten |
 | A5 | Beliebigen Ort weltweit suchen (Christchurch) | Vorschlag aus der Ortssuche, Suche startet, Link enthält den Namen, mit allen Reglern auf „egal“ gibt es Treffer |
+| A6 | Platzhalter im Startort-Feld | Handy „Startort“, Desktop „Startort eingeben …“; der Text passt ins Feld (nicht abgeschnitten) |
+| A7 | Suche mit Startort und Filtern, dann Klick auf Logo/Schriftzug | Startort leer, Legende „Startort wählen“, Link ohne Startort und Filter (komplett zurück auf Start) |
 
 ## B – Filter (`filters.spec.ts`)
 
@@ -77,6 +79,7 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | F3 | Startbildschirm, alle Ansichten | Startort-Feld und Umkreis ohne Scrollen sichtbar, im oberen Bereich |
 | F4 | Breite Suche, alle Ansichten | kein seitliches Scrollen |
 | F5 | Tippflächen (nur mobil) | Startort, Umkreis, Filter, Merkliste mindestens 32 px groß |
+| F6 | Unmögliche Suche auf dem Handy | Liste klappt von selbst auf und zeigt den Leerzustand mit Vorschlägen; zugeklappt heißt der Knopf „Keine Treffer – Vorschläge ansehen“ |
 
 ## G – Technik, Installation, Updates, Daten (`tech.spec.ts`)
 
@@ -106,7 +109,7 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 
 | ID | Testfall | Erwartung |
 |---|---|---|
-| I1 | Erster Besuch, Tour komplett durchklicken (inkl. „Zurück“), neu laden | Willkommen mit Zweck der Seite; Schritt 1–5 mit Markierung (Startort, Umkreis, Filter, Ergebnisse, Meine Suchen); danach nie wieder automatisch |
+| I1 | Erster Besuch, Tour komplett durchklicken (inkl. „Zurück“), neu laden | Willkommen mit Zweck der Seite; Schritt 1 zeigt das echte GPS-Symbol; Schritt 1–5 mit Markierung (Startort, Umkreis, Filter, Ergebnisse, Meine Suchen); danach nie wieder automatisch |
 | I2 | Erster Besuch, „Überspringen“ | Einführung zu, Seite sofort bedienbar, beim Neuladen keine Einführung |
 | I3 | „?“ (Kurzanleitung) in der Top-Bar, dann Esc | Einführung startet erneut, Esc schließt sie |
 
@@ -128,3 +131,5 @@ Hinweis: `openApp` markiert die Einführung für alle anderen Tests als gesehen.
 | 13.11.2026 | 2.0 | Einführung für Erstbesucher mit Markierungen und Kurzanleitung „?“ (I1–I3) |
 | 14.11.2026 | 2.0 | B6: Suche wird angehalten, bis der Zwischenzustand geprüft ist, statt fester Verzögerung (iPhone) |
 | 14.11.2026 | 2.0 | G9 prüft zusätzlich Antwort und Dauer der Suche ohne Treffer (Lockerungsvorschläge liefen vorher in eine Zeitüberschreitung) |
+| 14.11.2026 | 2.0 | Platzhalter Startort auf dem Handy kurz (A6), Logo setzt alles zurück (A7), Tour zeigt GPS-Symbol statt Pinnadel (I1) |
+| 14.11.2026 | 2.0 | Handy: bei 0 Treffern klappt die Liste mit den Vorschlägen von selbst auf (F6); Toleranz-Vorschlag prüft „Etwas flexibel“ und „Flexibel“ zuerst |

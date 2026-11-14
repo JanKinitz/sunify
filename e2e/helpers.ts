@@ -80,7 +80,8 @@ export async function openResults(page: Page): Promise<Locator> {
   if (!isMobile(page)) return page.getByTestId("results-desktop");
   const sheet = page.getByTestId("results-sheet");
   const showList = page.getByTestId("show-list");
-  if (await showList.isVisible()) await showList.click();
+  // bei 0 Treffern klappt die App das Sheet selbst auf – dann verschwindet der Knopf ggf. gerade
+  if (await showList.isVisible()) await showList.click({ timeout: 3_000 }).catch(() => undefined);
   await expect(sheet).toHaveAttribute("aria-hidden", "false");
   return sheet;
 }
