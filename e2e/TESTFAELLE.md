@@ -134,3 +134,4 @@ Hinweis: `openApp` markiert die Einführung für alle anderen Tests als gesehen.
 | 14.11.2026 | 2.0 | Platzhalter Startort auf dem Handy kurz (A6), Logo setzt alles zurück (A7), Tour zeigt GPS-Symbol statt Pinnadel (I1) |
 | 14.11.2026 | 2.0 | Handy: bei 0 Treffern klappt die Liste mit den Vorschlägen von selbst auf (F6); Toleranz-Vorschlag prüft „Etwas flexibel“ und „Flexibel“ zuerst |
 | 14.11.2026 | 2.0 | A6 misst über die tatsächliche Textbreite im Feld (vorher Canvas-Messung, falsch rot) |
+| 14.11.2026 | 2.0 | A6 hat echtes Platzproblem gefunden (Feld auf dem Handy 47–73 px): Umkreis zeigt dort nur „200 km“; B6 ohne Service Worker (sonst greift das Anhalten der Suche nicht) |

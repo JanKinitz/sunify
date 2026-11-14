@@ -1,8 +1,8 @@
-Lockerungs-Zaehlungen nach Zeitbudget in der DB abbrechen; Test A6 korrigiert
+Handy: Startort-Feld bekommt Platz, B6 ohne Service Worker
 
-Nicht mehr benoetigte Zaehlungen liefen weiter, hielten Verbindungen fest und
-bremsten folgende Suchen (H2 auf Android > 60 s, mehrere wackelige Tests).
-Jetzt SET LOCAL statement_timeout je Zaehlung. A6 misst die echte Textbreite.
+Test A6 hat gezeigt: das Startort-Feld war auf dem Handy nur 47-73 px breit.
+Umkreis zeigt dort jetzt nur "200 km", Abstaende kleiner.
+B6: Service Worker blockieren, sonst greift das Anhalten der Suche nicht.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

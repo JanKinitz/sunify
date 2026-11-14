@@ -15,7 +15,19 @@ import SavedSearches from "./SavedSearches";
 
 const RADIUS_OPTIONS = [50, 100, 150, 200, 250, 300, 400, 500];
 
-export function OriginField({
+export /** Schmaler Bildschirm (Handy hochkant): Start-Leiste kompakter beschriften */
+function useNarrow(): boolean {
+  const [narrow, setNarrow] = useState(() => window.matchMedia("(max-width: 639px)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const onChange = () => setNarrow(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return narrow;
+}
+
+function OriginField({
   origin,
   onSelect,
   onNotify,
@@ -35,13 +47,7 @@ export function OriginField({
   useEffect(() => setQuery(shown), [shown]);
 
   // Auf schmalen Bildschirmen ist das Feld kurz: dort nur „Startort“, sonst wird der Text abgeschnitten
-  const [narrow, setNarrow] = useState(() => window.matchMedia("(max-width: 639px)").matches);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
-    const onChange = () => setNarrow(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+  const narrow = useNarrow();
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -211,11 +217,12 @@ export default function StartBar({
   };
 }) {
   useI18n();
+  const narrow = useNarrow();
   const options = RADIUS_OPTIONS.includes(filters.radiusKm)
     ? RADIUS_OPTIONS
     : [...RADIUS_OPTIONS, filters.radiusKm].sort((a, b) => a - b);
   return (
-    <div className="relative flex items-stretch gap-2">
+    <div className="relative flex items-stretch gap-1.5 sm:gap-2">
       <div className="min-w-0 flex-1" data-tour="origin">
         <OriginField origin={filters.origin} onSelect={(origin) => onChange({ origin })} onNotify={onNotify} />
       </div>
@@ -230,7 +237,7 @@ export default function StartBar({
         >
           {options.map((km) => (
             <option key={km} value={km} className="text-ink-900">
-              {tr("{dist} Umkreis", { dist: fmtDist(km) })}
+              {narrow ? fmtDist(km) : tr("{dist} Umkreis", { dist: fmtDist(km) })}
             </option>
           ))}
         </select>

@@ -58,6 +58,10 @@ test.describe("B Filter", () => {
     await expect(originInput(page)).toHaveValue("München");
   });
 
+  test.describe("B6 ohne Service Worker", () => {
+  // Der Service Worker übernimmt die Seite (clients.claim) – dann sieht page.route die Suche nicht mehr
+  // und die angehaltene Suche läuft trotzdem durch (war auf dem iPhone wackelig).
+  test.use({ serviceWorkers: "block" });
   test("B6 Während der Suche keine veraltete Trefferzahl", async ({ page }) => {
     await openApp(page, BROAD_SEARCH);
     await waitForSearchDone(page);
@@ -78,5 +82,6 @@ test.describe("B Filter", () => {
     release();
     await waitForSearchDone(page);
     await expect(page.getByTestId("map-legend")).toContainText(/\d+ Treffer|Keine Treffer/);
+  });
   });
 });

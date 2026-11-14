@@ -102,7 +102,8 @@ Workflows (`.github/workflows/`; Kopie in `scripts/github-workflows/`, beide gle
 - **Aktivitätsprofile** (`lib/profiles.ts`): Wandern, Strand, Städtetrip, Rad, Wein, Wellness – setzen saisonale
   Filterwerte, danach frei anpassbar.
 - **Start-Leiste** (`components/StartBar.tsx`) in der Top-Bar: Startort (Eingabe/GPS), Umkreis und „Meine Suchen“ –
-  die erste Funktion auf Desktop und Handy. Eine Freitext-Suche gibt es nicht mehr (kommt ggf. mit der KI-Suche zurück).
+  die erste Funktion auf Desktop und Handy. Auf schmalen Bildschirmen (< 640 px) kompakt: Platzhalter „Startort“,
+  Umkreis nur „200 km“ (sonst bleiben fürs Startort-Feld < 80 px, Test A6 misst das). Eine Freitext-Suche gibt es nicht mehr (kommt ggf. mit der KI-Suche zurück).
 - **Meine Suchen** (`lib/presets.ts`, `components/SavedSearches.tsx`): bis zu 12 Vorlagen mit Startort, Umkreis und
   allen Filtern, **ohne Zeitraum** (Laden behält den Zeitraum). Nur im Browser (`localStorage` `sunify:presets`),
   kein Konto. Gleicher Name überschreibt. Eine Vorlage kann Start-Vorlage (★) sein: Reihenfolge beim Öffnen
@@ -114,6 +115,8 @@ Workflows (`.github/workflows/`; Kopie in `scripts/github-workflows/`, beide gle
   startet sie erneut. Tests: `openApp` markiert sie als gesehen, nur `{ tour: true }` zeigt sie.
 - **Logo/Schriftzug** in der Top-Bar (`data-testid="home"`): komplett zurück auf Start – kein Startort, alle Filter
   auf Standard, keine Start-Vorlage, offene Ansichten zu.
+- **Tests mit `page.route`** (Suche anhalten/verändern): `test.use({ serviceWorkers: "block" })`, sonst holt der
+  Service Worker die Anfrage am Test vorbei.
 - **Startzustand:** kein Startort (außer es gibt eine Start-Vorlage), alle Wetter-Regler auf „egal“ (Temperatur ganz links, Wind ganz rechts,
   Regen egal, 0 Std. Sonne); gesucht wird erst mit Startort. „Zurücksetzen“ behält den Startort.
 - Während eine Suche läuft (`pending`), zeigen Buttons und Legende „Suche läuft …“ statt der alten Trefferzahl,
