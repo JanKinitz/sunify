@@ -8,6 +8,10 @@ where git >nul 2>nul
 if errorlevel 1 goto nogit
 if not exist .git goto nogit
 
+echo [0/4] Neuesten Stand von GitHub holen (Claude laedt inzwischen auch direkt hoch) ...
+git pull --rebase --autostash origin main
+if errorlevel 1 goto failed
+
 echo [1/4] Abhaengigkeiten aktualisieren ...
 call npm install --no-audit --no-fund
 if errorlevel 1 goto failed

@@ -32,7 +32,12 @@ Vollständige Spezifikation: `SPEC.md` (nur lokal, nicht im öffentlichen Reposi
 2. **Testbibliothek anpassen:** für jede neue oder geänderte Funktion Eintrag in `e2e/TESTFAELLE.md` (neue ID,
    Änderungsliste unten ergänzen) und Test in `e2e/*.spec.ts`; entfallene Funktionen samt Test streichen.
    Selektoren: Rollen/Beschriftungen bevorzugen, sonst `data-testid` (Layout-Bereiche siehe `e2e/helpers.ts`).
-3. Hochladen mit `save-v2.bat` → GitHub baut eine **Vorschau-Version** bei Netlify (0 Credits), lässt **alle Tests in
+3. Hochladen: **Claude committet und pusht direkt aus der Cloud** (Claude-GitHub-App auf `JanKinitz/sunify`), aber
+   **nur nach ausdrücklicher Bestätigung des Nutzers im Chat – jedes Mal** (vorher kurz sagen, was hochgeht).
+   Vor dem Commit `node scripts/git-safety-check.mjs` ausführen. Workflows direkt in `.github/workflows/` und
+   `scripts/github-workflows/` gleich halten. Danach den Lauf beobachten und das Ergebnis melden.
+   `save-v2.bat` (Laptop) bleibt als Alternative und holt zuerst den neuesten Stand (`git pull --rebase`).
+   GitHub baut eine **Vorschau-Version** bei Netlify (0 Credits), lässt **alle Tests in
    drei Ansichten** (Desktop, Android, iPhone) dagegen laufen und schaltet genau diese Version erst bei grünem Lauf live.
    Ein Release ist erst fertig, wenn der Lauf grün und live ist.
    **Netlify-Credits:** Gratis-Tarif 300/Monat, jede Live-Schaltung 15, Vorschauen gratis; bei 0 wird die Seite bis
@@ -48,7 +53,7 @@ Vollständige Spezifikation: `SPEC.md` (nur lokal, nicht im öffentlichen Reposi
 | Datenjobs | GitHub Actions (öffentliches Repo ⇒ unbegrenzte Minuten) | Python-Pipeline `pipeline/` |
 | Datenbank | Supabase (eigenes Projekt für 2.0) | PostGIS, Migrationen in `supabase/migrations/` |
 
-Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.bat` kopiert sie – Claude kann `.github` auf dem Rechner nicht direkt beschreiben):
+Workflows (`.github/workflows/`; Kopie in `scripts/github-workflows/`, beide gleich halten – `save-v2.bat` kopiert sie):
 - `db-setup.yml` (manuell, `run-db-setup.bat`): migrate → seed → weather-om → weather-gfs → status.
 - `weather-gfs.yml`: 4× täglich (05:40, 11:40, 17:40, 23:40 UTC) NOAA GFS weltweit, 16 Tage; zusätzlich sofort nach
   Änderungen an `pipeline/daily.py`, `gfs.py`, `weather.py`. Tage vor dem ersten vollständigen lokalen Tag des
@@ -163,16 +168,8 @@ python -m pipeline migrate|seed|weather-gfs|weather-om|status   # Datenjobs (bra
 
 ## Backlog (bei der nächsten Änderung mit erledigen)
 
-- (leer)
-
-## In Arbeit (fertig umgesetzt, noch nicht veröffentlicht – kommt ins nächste Paket)
-
-- „Meine Suchen“ (Vorlagen, Start-Vorlage), Tests H1–H5.
-- Einführung für Erstbesucher mit Kurzanleitung „?“, Tests I1–I3.
-- B6 stabiler (Suche wird im Test angehalten statt fester Verzögerung).
-- Suche ohne Treffer: Lockerungsvorschläge parallel mit Zeitbudget (vorher bis zu 16 Abfragen nacheinander → bei großem
-  Radius Zeitüberschreitung der Netlify-Funktion, leere Seite). Lokal nur teilweise typgeprüft; der volle Build und die
-  Tests laufen beim Hochladen gegen die Vorschau.
+- Bereits lokal committet, noch nicht hochgeladen: `save-v2.bat` holt zuerst den neuesten Stand, neuer
+  Hochlade-Ablauf in dieser Datei. Mit der nächsten Änderung (nach Bestätigung) mit hochladen.
 
 ## Später
 

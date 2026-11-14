@@ -1,8 +1,4 @@
-Suche ohne Treffer: Lockerungsvorschlaege parallel mit Zeitbudget
-
-Bis zu 16 Zaehl-Abfragen liefen nacheinander; bei grossem Radius dauerte das ueber
-25 s und die Netlify-Funktion brach ab (leere Seite statt Smart Empty State).
-Jetzt parallel (Pool max. 4) mit 8 s Budget. G9 prueft Antwort und Dauer.
+Hochladen direkt durch Claude, save-v2.bat holt vorher den neuesten Stand
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J
