@@ -157,11 +157,16 @@ test.describe("G Technik", () => {
     })).json();
     expect(all.totalMatches).toBeGreaterThan(100);
     expect(all.otherIds, "graue Punkte bei „alles egal“").toEqual([]);
-    // Strenge Suche: graue Punkte und Treffer überschneiden sich nie
-    const strict = await (await request.post("/api/search", {
+    // Strenge Suche: graue Punkte und Treffer überschneiden sich nie.
+    // Hat sie keine Treffer, rechnet der Server Lockerungsvorschläge – die Antwort muss trotzdem kommen.
+    const started = Date.now();
+    const res = await request.post("/api/search", {
       timeout: 60_000,
       data: { ...base, criteria: { minTempMax: 15, maxPrecipitationSum: 0, maxWindSpeed: 20, minSunshineHours: 4 } },
-    })).json();
+    });
+    expect(res.status(), "strenge Suche beantwortet").toBe(200);
+    expect(Date.now() - started, "strenge Suche inkl. Lockerungsvorschlägen in < 20 s").toBeLessThan(20_000);
+    const strict = await res.json();
     const hits = new Set((strict.matches as { id: number }[]).map((m) => m.id));
     expect((strict.otherIds as number[]).filter((id) => hits.has(id))).toEqual([]);
   });

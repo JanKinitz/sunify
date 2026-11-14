@@ -139,40 +139,70 @@ function precipModeOf(maxPrecip: number | null): PrecipMode {
   return maxPrecip <= 0 ? "dry" : "almost";
 }
 
-async function findRelaxations(db: Queryable, r: SearchRequest): Promise<Relaxation[]> {
-  const out: Relaxation[] = [];
-  const tryAdd = async (id: Relaxation["id"], changed: SearchRequest, patch: Relaxation["patch"]) => {
-    const n = await countMatches(db, changed);
-    if (n > 0) out.push({ id, count: n, patch });
-    return n;
-  };
+/** Zeitbudget für Lockerungsvorschläge – die Netlify-Funktion darf insgesamt nicht ablaufen */
+const RELAX_BUDGET_MS = 8_000;
 
-  // 1) Radius erweitern (+100 km, sonst weiter)
+/**
+ * Lockerungsvorschläge für eine Suche ohne Treffer (Smart Empty State).
+ * Alle Kandidaten laufen parallel (der Pool begrenzt die gleichzeitigen Verbindungen); was nach
+ * RELAX_BUDGET_MS nicht fertig ist, fällt weg. Früher liefen bis zu 16 Abfragen nacheinander –
+ * bei großem Radius über 25 s, dann brach die Funktion ab und die Seite blieb leer.
+ */
+async function findRelaxations(db: Queryable, r: SearchRequest): Promise<Relaxation[]> {
+  type Candidate = { id: Relaxation["id"]; changed: SearchRequest; patch: Relaxation["patch"]; rank: number };
+  const candidates: Candidate[] = [];
+
+  // 1) Radius erweitern: kleinste Erweiterung mit Treffern gewinnt
   for (const extra of [100, 200, 300]) {
     const radiusKm = Math.min(RADIUS_MAX, r.radiusKm + extra);
-    if (radiusKm <= r.radiusKm) break;
-    if ((await tryAdd("radius", { ...r, radiusKm }, { radiusKm })) > 0) break;
+    if (radiusKm <= r.radiusKm || candidates.some((c) => c.id === "radius" && c.changed.radiusKm === radiusKm)) continue;
+    candidates.push({ id: "radius", changed: { ...r, radiusKm }, patch: { radiusKm }, rank: extra });
   }
   // 2) Toleranz erhöhen
   if (r.tolerance < 2) {
     const tolerance = (r.tolerance + 1) as Tolerance;
-    await tryAdd("tolerance", { ...r, tolerance }, { tolerance });
+    candidates.push({ id: "tolerance", changed: { ...r, tolerance }, patch: { tolerance }, rank: 0 });
   }
-  // 3) Temperatur in 2-°C-Schritten senken, bis Treffer auftauchen (höchstens bis -5 °C)
-  for (let minTemp = r.minTemp - 2; minTemp >= Math.min(-5, r.minTemp - 2); minTemp -= 2) {
-    if ((await tryAdd("temp", { ...r, minTemp }, { minTemp })) > 0) break;
+  // 3) Temperatur senken: kleinste Senkung mit Treffern gewinnt (höchstens bis -5 °C)
+  if (r.minTemp > -5) {
+    const steps = [2, 4, 6, 10].map((d) => Math.max(-5, r.minTemp - d));
+    for (const minTemp of [...new Set(steps)]) {
+      candidates.push({ id: "temp", changed: { ...r, minTemp }, patch: { minTemp }, rank: r.minTemp - minTemp });
+    }
   }
   // 4) Niederschlag lockern
   const mode = precipModeOf(r.maxPrecip);
-  if (mode === "dry") await tryAdd("precip", { ...r, maxPrecip: 1 }, { precipMode: "almost" });
-  else if (mode === "almost") await tryAdd("precip", { ...r, maxPrecip: null }, { precipMode: "any" });
+  if (mode === "dry") candidates.push({ id: "precip", changed: { ...r, maxPrecip: 1 }, patch: { precipMode: "almost" }, rank: 0 });
+  else if (mode === "almost") candidates.push({ id: "precip", changed: { ...r, maxPrecip: null }, patch: { precipMode: "any" }, rank: 0 });
   // 5) Sonne und Wind lockern, Orts-Charakter öffnen
   if (r.minSun >= 2) {
     const minSun = Math.max(0, r.minSun - 2);
-    await tryAdd("sun", { ...r, minSun }, { minSun });
+    candidates.push({ id: "sun", changed: { ...r, minSun }, patch: { minSun }, rank: 0 });
   }
-  if (r.maxWind <= 50) await tryAdd("wind", { ...r, maxWind: r.maxWind + 10 }, { maxWind: r.maxWind + 10 });
-  if (r.category !== "all") await tryAdd("category", { ...r, category: "all" }, { category: "all" });
+  if (r.maxWind <= 50) candidates.push({ id: "wind", changed: { ...r, maxWind: r.maxWind + 10 }, patch: { maxWind: r.maxWind + 10 }, rank: 0 });
+  if (r.category !== "all") candidates.push({ id: "category", changed: { ...r, category: "all" }, patch: { category: "all" }, rank: 0 });
+
+  const counts = new Map<Candidate, number>();
+  const work = Promise.all(
+    candidates.map((c) =>
+      countMatches(db, c.changed)
+        .then((n) => void counts.set(c, n))
+        .catch(() => undefined)
+    )
+  );
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([work, new Promise<void>((done) => (timer = setTimeout(done, RELAX_BUDGET_MS)))]);
+  clearTimeout(timer);
+
+  // je Art der beste Kandidat (kleinste Änderung), Reihenfolge wie bisher
+  const order: Relaxation["id"][] = ["radius", "tolerance", "temp", "precip", "sun", "wind", "category"];
+  const out: Relaxation[] = [];
+  for (const id of order) {
+    const best = candidates
+      .filter((c) => c.id === id && (counts.get(c) ?? 0) > 0)
+      .sort((a, b) => a.rank - b.rank)[0];
+    if (best) out.push({ id, count: counts.get(best)!, patch: best.patch });
+  }
   return out;
 }
 

@@ -90,7 +90,7 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | G6 | Quellenangaben | Open-Meteo, NOAA GFS, GeoNames, Wikimedia Commons, OpenStreetMap unter der Liste |
 | G7 | Antwortzeit: breite Suche (München, 300 km) dreimal direkt an `/api/search` (nur Desktop-Lauf) | schnellste Antwort unter 8 s; Laufzeiten je Abfrageschritt stehen im Bericht |
 | G8 | Prognosen weltweit (Christchurch, Tokio, Kapstadt, Denver, Honolulu, Buenos Aires), Wochenende, alles „egal“ (nur Desktop-Lauf) | überall Treffer – fängt verschobene Tage in fernen Zeitzonen ab |
-| G9 | Graue Punkte (nur Desktop-Lauf) | bei „alles egal“ (> 100 Treffer) kein grauer Punkt; bei strenger Suche nie ein Ort zugleich Treffer und grau |
+| G9 | Graue Punkte (nur Desktop-Lauf) | bei „alles egal“ (> 100 Treffer) kein grauer Punkt; bei strenger Suche nie ein Ort zugleich Treffer und grau; strenge Suche ohne Treffer antwortet samt Lockerungsvorschlägen in < 20 s |
 
 ## H – Meine Suchen (`presets.spec.ts`)
 
@@ -127,3 +127,4 @@ Hinweis: `openApp` markiert die Einführung für alle anderen Tests als gesehen.
 | 13.11.2026 | 2.0 | „Meine Suchen“: eigene Vorlagen mit Startort, Umkreis und Filtern, Start-Vorlage (H1–H5) |
 | 13.11.2026 | 2.0 | Einführung für Erstbesucher mit Markierungen und Kurzanleitung „?“ (I1–I3) |
 | 14.11.2026 | 2.0 | B6: Suche wird angehalten, bis der Zwischenzustand geprüft ist, statt fester Verzögerung (iPhone) |
+| 14.11.2026 | 2.0 | G9 prüft zusätzlich Antwort und Dauer der Suche ohne Treffer (Lockerungsvorschläge liefen vorher in eine Zeitüberschreitung) |

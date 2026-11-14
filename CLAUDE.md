@@ -134,7 +134,7 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
 | `components/ResultList.tsx` | Ergebniskarten mit Foto (`PhotoHeader`), Fast-Treffer-Abschnitt |
 | `components/DetailDrawer.tsx` | Detail mit Foto, Tages-Nachweis (ok/knapp/verfehlt), Conversion-Box |
 | `components/SettingsSwitch.tsx` | DE/EN, °C/°F, „App installieren“ |
-| `services/searchService.ts` | Validierung, `search_destinations_v2` (Treffer + graue Punkte), danach EINE Abfrage für Stammdaten/Prognosen, Lockerungsvorschläge; `meta.timings` |
+| `services/searchService.ts` | Validierung, `search_destinations_v2` (Treffer + graue Punkte), danach EINE Abfrage für Stammdaten/Prognosen, Lockerungsvorschläge (parallel, Zeitbudget 8 s, Pool max. 4); `meta.timings` |
 | `pipeline/` | Python: `seed.py`, `grid.py`, `scoring.py`, `wikidata.py`, `gfs.py`, `openmeteo.py`, `weather.py` |
 | `e2e/` | Testbibliothek: `TESTFAELLE.md` (Katalog), `*.spec.ts` (Playwright), `helpers.ts` |
 | `components/UpdateNotice.tsx` | Update-Erkennung nach neuen Veröffentlichungen |
@@ -169,7 +169,9 @@ python -m pipeline migrate|seed|weather-gfs|weather-om|status   # Datenjobs (bra
 
 - „Meine Suchen“ (Vorlagen, Start-Vorlage), Tests H1–H5.
 - Einführung für Erstbesucher mit Kurzanleitung „?“, Tests I1–I3.
-- B6 stabiler (Suche wird im Test angehalten statt fester Verzögerung). Lokal nur teilweise typgeprüft; der volle Build und die
+- B6 stabiler (Suche wird im Test angehalten statt fester Verzögerung).
+- Suche ohne Treffer: Lockerungsvorschläge parallel mit Zeitbudget (vorher bis zu 16 Abfragen nacheinander → bei großem
+  Radius Zeitüberschreitung der Netlify-Funktion, leere Seite). Lokal nur teilweise typgeprüft; der volle Build und die
   Tests laufen beim Hochladen gegen die Vorschau.
 
 ## Später

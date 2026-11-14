@@ -11,8 +11,9 @@ export function getPool(): Pool {
   if (!globalForPool.sunifyPoolV2) {
     globalForPool.sunifyPoolV2 = new Pool({
       ...connectionOptions(),
-      // klein halten: bei Vercel laufen mehrere Instanzen, Supabase erlaubt nur wenige Verbindungen
-      max: 3,
+      // klein halten: es laufen mehrere Instanzen, Supabase erlaubt nur wenige Verbindungen.
+      // 4 erlaubt parallele Lockerungsvorschläge bei Suchen ohne Treffer.
+      max: 4,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 10_000,
     });
