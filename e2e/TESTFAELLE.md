@@ -92,6 +92,26 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | G8 | Prognosen weltweit (Christchurch, Tokio, Kapstadt, Denver, Honolulu, Buenos Aires), Wochenende, alles „egal“ (nur Desktop-Lauf) | überall Treffer – fängt verschobene Tage in fernen Zeitzonen ab |
 | G9 | Graue Punkte (nur Desktop-Lauf) | bei „alles egal“ (> 100 Treffer) kein grauer Punkt; bei strenger Suche nie ein Ort zugleich Treffer und grau |
 
+## H – Meine Suchen (`presets.spec.ts`)
+
+| ID | Testfall | Erwartung |
+|---|---|---|
+| H1 | Suche öffnen, unter „Meine Suchen“ speichern, neu laden | Vorlage bleibt (Browser-Speicher), Knopf zeigt sie als aktiv |
+| H2 | Vorlage speichern, andere Suche öffnen, Vorlage laden | Startort, Umkreis und Filter aus der Vorlage, Zeitraum bleibt unverändert |
+| H3 | Vorlage als Start-Vorlage (★) markieren, App ohne Parameter öffnen, danach geteilten Link öffnen | Start-Vorlage wird geladen; ein geteilter Link hat Vorrang |
+| H4 | Vorlage löschen, Rückfrage erst abbrechen, dann bestätigen | erst bleibt sie, dann ist die Liste leer mit Hinweistext |
+| H5 | Vorlage speichern, App ohne Startort öffnen | Startseite zeigt „Meine Suchen“ als Schnellwahl, ein Klick startet die Suche |
+
+## I – Einführung für Erstbesucher (`tour.spec.ts`)
+
+| ID | Testfall | Erwartung |
+|---|---|---|
+| I1 | Erster Besuch, Tour komplett durchklicken (inkl. „Zurück“), neu laden | Willkommen mit Zweck der Seite; Schritt 1–5 mit Markierung (Startort, Umkreis, Filter, Ergebnisse, Meine Suchen); danach nie wieder automatisch |
+| I2 | Erster Besuch, „Überspringen“ | Einführung zu, Seite sofort bedienbar, beim Neuladen keine Einführung |
+| I3 | „?“ (Kurzanleitung) in der Top-Bar, dann Esc | Einführung startet erneut, Esc schließt sie |
+
+Hinweis: `openApp` markiert die Einführung für alle anderen Tests als gesehen.
+
 ## Änderungen
 
 | Datum | Version | Änderung |
@@ -104,3 +124,6 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | 13.11.2026 | 2.0 | C7/D4: Suche passt sich dem aktuellen Wetter an, damit es sicher Fast-Treffer gibt (vorher übersprungen) |
 | 13.11.2026 | 2.0 | C7/D4: Schwelle wird am Server ausprobiert (vorher geschätzt, ohne Fast-Treffer); Protokoll der Versuche im Testlauf |
 | 13.11.2026 | 2.0 | Tests laufen vor der Live-Schaltung gegen eine kostenlose Vorschau-Version; B6 mit längerer künstlicher Verzögerung (auf dem iPhone gelegentlich zu knapp) |
+| 13.11.2026 | 2.0 | „Meine Suchen“: eigene Vorlagen mit Startort, Umkreis und Filtern, Start-Vorlage (H1–H5) |
+| 13.11.2026 | 2.0 | Einführung für Erstbesucher mit Markierungen und Kurzanleitung „?“ (I1–I3) |
+| 14.11.2026 | 2.0 | B6: Suche wird angehalten, bis der Zwischenzustand geprüft ist, statt fester Verzögerung (iPhone) |

@@ -1,0 +1,9 @@
+Meine Suchen und Einfuehrung fuer Erstbesucher
+
+- Meine Suchen: Vorlagen mit Startort, Umkreis und Filtern (ohne Zeitraum),
+  Start-Vorlage, Schnellwahl auf der Startseite (Tests H1-H5)
+- Einfuehrung beim ersten Besuch: Willkommen und fuenf Schritte mit Markierung,
+  Kurzanleitung "?" in der Top-Bar (Tests I1-I3)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

@@ -94,9 +94,18 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
   nur im Produktions-Build. Installieren-Button in der Top-Bar, sobald der Browser es anbietet.
 - **Aktivitätsprofile** (`lib/profiles.ts`): Wandern, Strand, Städtetrip, Rad, Wein, Wellness – setzen saisonale
   Filterwerte, danach frei anpassbar.
-- **Start-Leiste** (`components/StartBar.tsx`) in der Top-Bar: Startort (Eingabe/GPS) und Umkreis – die erste
-  Funktion auf Desktop und Handy. Eine Freitext-Suche gibt es nicht mehr (kommt ggf. mit der KI-Suche zurück).
-- **Startzustand:** kein Startort, alle Wetter-Regler auf „egal“ (Temperatur ganz links, Wind ganz rechts,
+- **Start-Leiste** (`components/StartBar.tsx`) in der Top-Bar: Startort (Eingabe/GPS), Umkreis und „Meine Suchen“ –
+  die erste Funktion auf Desktop und Handy. Eine Freitext-Suche gibt es nicht mehr (kommt ggf. mit der KI-Suche zurück).
+- **Meine Suchen** (`lib/presets.ts`, `components/SavedSearches.tsx`): bis zu 12 Vorlagen mit Startort, Umkreis und
+  allen Filtern, **ohne Zeitraum** (Laden behält den Zeitraum). Nur im Browser (`localStorage` `sunify:presets`),
+  kein Konto. Gleicher Name überschreibt. Eine Vorlage kann Start-Vorlage (★) sein: Reihenfolge beim Öffnen
+  geteilter Link (Such-Parameter in der URL) > Start-Vorlage > leerer Start. Ohne Startort zeigt die Startseite
+  die Vorlagen als Schnellwahl.
+- **Einführung** (`components/OnboardingTour.tsx`): beim ersten Besuch Willkommen (Zweck der Seite), dann 5 Schritte
+  mit abgedunkelter Seite, Markierung und Pfeil (Startort, Umkreis, Filter, Ergebnisse, Meine Suchen; Ziele per
+  `data-tour`/`data-testid`, Handy-Ziele als Ausweichziel). Merker `localStorage` `sunify:tour`; „?“ in der Top-Bar
+  startet sie erneut. Tests: `openApp` markiert sie als gesehen, nur `{ tour: true }` zeigt sie.
+- **Startzustand:** kein Startort (außer es gibt eine Start-Vorlage), alle Wetter-Regler auf „egal“ (Temperatur ganz links, Wind ganz rechts,
   Regen egal, 0 Std. Sonne); gesucht wird erst mit Startort. „Zurücksetzen“ behält den Startort.
 - Während eine Suche läuft (`pending`), zeigen Buttons und Legende „Suche läuft …“ statt der alten Trefferzahl,
   die alte Liste wird abgeblendet.
@@ -119,6 +128,8 @@ Workflows (`.github/workflows/`; Quelle: `scripts/github-workflows/`, `save-v2.b
 |---|---|
 | `components/SunifyApp.tsx` | UI-State, Layout, Top-Bar mit Sprache/Einheiten/Installieren |
 | `components/StartBar.tsx` | Startort (Vorschläge, Geocoding, GPS) und Umkreis in der Top-Bar |
+| `components/SavedSearches.tsx` | „Meine Suchen“: Menü zum Speichern/Laden/Löschen, Start-Vorlage |
+| `components/OnboardingTour.tsx` | Einführung für Erstbesucher (Willkommen + Schritte mit Markierung) |
 | `components/FilterPanel.tsx` | Profile, Zeitraum, Wunschwetter, Toleranz, Orts-Charakter |
 | `components/ResultList.tsx` | Ergebniskarten mit Foto (`PhotoHeader`), Fast-Treffer-Abschnitt |
 | `components/DetailDrawer.tsx` | Detail mit Foto, Tages-Nachweis (ok/knapp/verfehlt), Conversion-Box |
@@ -153,6 +164,13 @@ python -m pipeline migrate|seed|weather-gfs|weather-om|status   # Datenjobs (bra
 ## Backlog (bei der nächsten Änderung mit erledigen)
 
 - (leer)
+
+## In Arbeit (fertig umgesetzt, noch nicht veröffentlicht – kommt ins nächste Paket)
+
+- „Meine Suchen“ (Vorlagen, Start-Vorlage), Tests H1–H5.
+- Einführung für Erstbesucher mit Kurzanleitung „?“, Tests I1–I3.
+- B6 stabiler (Suche wird im Test angehalten statt fester Verzögerung). Lokal nur teilweise typgeprüft; der volle Build und die
+  Tests laufen beim Hochladen gegen die Vorschau.
 
 ## Später
 

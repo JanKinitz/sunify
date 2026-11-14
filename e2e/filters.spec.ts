@@ -61,9 +61,11 @@ test.describe("B Filter", () => {
   test("B6 Während der Suche keine veraltete Trefferzahl", async ({ page }) => {
     await openApp(page, BROAD_SEARCH);
     await waitForSearchDone(page);
-    // Suche künstlich verlangsamen, damit der Zwischenzustand sicher sichtbar ist
+    // Suche anhalten, bis der Zwischenzustand geprüft ist (feste Wartezeit war auf dem iPhone zu knapp)
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => (release = r));
     await page.route("**/api/search", async (route) => {
-      await new Promise((r) => setTimeout(r, 5000));
+      await gate;
       await route.continue();
     });
     const filters = await openFilters(page);
@@ -73,6 +75,7 @@ test.describe("B Filter", () => {
       await closeFilters(page);
     }
     await expect(page.getByTestId("map-legend")).toContainText("Suche läuft");
+    release();
     await waitForSearchDone(page);
     await expect(page.getByTestId("map-legend")).toContainText(/\d+ Treffer|Keine Treffer/);
   });

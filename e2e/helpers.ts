@@ -14,8 +14,23 @@ export function originInput(page: Page): Locator {
   return page.locator("#sunify-origin");
 }
 
-/** App öffnen (optional mit Such-Parametern wie in einem geteilten Link) */
-export async function openApp(page: Page, query = ""): Promise<void> {
+const tourMarked = new WeakSet<Page>();
+
+/**
+ * App öffnen (optional mit Such-Parametern wie in einem geteilten Link).
+ * Die Einführung für Erstbesucher wird dabei als gesehen markiert – außer mit `{ tour: true }` (Tests I*).
+ */
+export async function openApp(page: Page, query = "", opts: { tour?: boolean } = {}): Promise<void> {
+  if (!opts.tour && !tourMarked.has(page)) {
+    tourMarked.add(page);
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem("sunify:tour", "done");
+      } catch {
+        /* egal */
+      }
+    });
+  }
   await page.goto(query ? `/?${query}` : "/");
   await expect(originInput(page)).toBeVisible();
 }

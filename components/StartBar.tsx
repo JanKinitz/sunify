@@ -9,7 +9,9 @@ import { geocodePlaces } from "@/lib/geocode";
 import { fmtDist, tr } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-react";
 import { hasOrigin, originLabel, POPULAR_ORIGINS } from "@/lib/origins";
+import type { SavedSearch } from "@/lib/presets";
 import type { Filters, Origin } from "@/lib/types";
+import SavedSearches from "./SavedSearches";
 
 const RADIUS_OPTIONS = [50, 100, 150, 200, 250, 300, 400, 500];
 
@@ -185,21 +187,30 @@ export default function StartBar({
   filters,
   onChange,
   onNotify,
+  presets,
 }: {
   filters: Filters;
   onChange: (patch: Partial<Filters>) => void;
   onNotify: (message: string) => void;
+  /** „Meine Suchen“ (Vorlagen samt Aktionen) */
+  presets: {
+    list: SavedSearch[];
+    onApply: (preset: SavedSearch) => void;
+    onSave: (name: string) => void;
+    onToggleDefault: (id: string) => void;
+    onRemove: (id: string) => void;
+  };
 }) {
   useI18n();
   const options = RADIUS_OPTIONS.includes(filters.radiusKm)
     ? RADIUS_OPTIONS
     : [...RADIUS_OPTIONS, filters.radiusKm].sort((a, b) => a - b);
   return (
-    <div className="flex items-stretch gap-2">
-      <div className="min-w-0 flex-1">
+    <div className="relative flex items-stretch gap-2">
+      <div className="min-w-0 flex-1" data-tour="origin">
         <OriginField origin={filters.origin} onSelect={(origin) => onChange({ origin })} onNotify={onNotify} />
       </div>
-      <label className="relative flex shrink-0 items-center rounded-xl border border-white/10 bg-white/10 pl-2.5 text-white transition focus-within:border-sun-400 hover:border-sun-400">
+      <label data-tour="radius" className="relative flex shrink-0 items-center rounded-xl border border-white/10 bg-white/10 pl-2.5 text-white transition focus-within:border-sun-400 hover:border-sun-400">
         <CircleDot className="pointer-events-none h-4 w-4 text-sun-400" aria-hidden="true" />
         <span className="sr-only">{tr("Suchradius")}</span>
         <select
@@ -215,6 +226,14 @@ export default function StartBar({
           ))}
         </select>
       </label>
+      <SavedSearches
+        filters={filters}
+        presets={presets.list}
+        onApply={presets.onApply}
+        onSave={presets.onSave}
+        onToggleDefault={presets.onToggleDefault}
+        onRemove={presets.onRemove}
+      />
     </div>
   );
 }

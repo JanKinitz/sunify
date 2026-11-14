@@ -4,7 +4,7 @@
 // Favoriten) und verdrahtet die Kern-Screens. Die Daten kommen von POST /api/search.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CloudOff, Heart, Info, List, LoaderCircle, Map as MapIcon, MapPin, Share2, SlidersHorizontal, X } from "lucide-react";
+import { CircleHelp, CloudOff, Heart, Info, List, LoaderCircle, Map as MapIcon, MapPin, Share2, SlidersHorizontal, X } from "lucide-react";
 import { fetchSearch, type SearchData } from "@/lib/api";
 import { formatRange, formatWeekdayRange } from "@/lib/dates";
 import { defaultFilters, filtersFromQuery, filtersToQuery } from "@/lib/filters";
@@ -12,15 +12,27 @@ import { groupResults } from "@/lib/grouping";
 import { fmtDist, formatInt, getLocale, tr, trn } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-react";
 import { hasOrigin, originLabel } from "@/lib/origins";
+import {
+  applyPreset,
+  initialFilters,
+  loadPresets,
+  removePreset,
+  storePresets,
+  toggleDefault,
+  upsertPreset,
+  type SavedSearch,
+} from "@/lib/presets";
 import { describeDestination, isUncertainDay, sortResults } from "@/lib/search";
 import type { Destination, Filters, SearchResult, SortKey } from "@/lib/types";
 import DetailDrawer from "./DetailDrawer";
 import EmptyState from "./EmptyState";
 import FavoritesDrawer from "./FavoritesDrawer";
 import FilterPanel from "./FilterPanel";
+import OnboardingTour, { markTourSeen, tourSeen } from "./OnboardingTour";
 import MapView, { type MapFocusRequest } from "./MapView";
 import ResultList, { SortSelect } from "./ResultList";
 import { InstallButton, SettingsSwitch } from "./SettingsSwitch";
+import { presetSummary } from "./SavedSearches";
 import StartBar from "./StartBar";
 
 const FAVORITES_KEY = "sunify:favorites";
@@ -97,7 +109,7 @@ function DataSources({ updatedAt }: { updatedAt: string | null }) {
 
 export default function SunifyApp() {
   const { locale, units } = useI18n();
-  const [filters, setFilters] = useState<Filters>(() => filtersFromQuery(window.location.search));
+  const [filters, setFilters] = useState<Filters>(() => initialFilters(window.location.search, filtersFromQuery));
   const [sort, setSort] = useState<SortKey>("score");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [listHoverId, setListHoverId] = useState<number | null>(null);
@@ -106,6 +118,12 @@ export default function SunifyApp() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [mobileFilters, setMobileFilters] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Einführung beim ersten Besuch (danach über „?“ in der Top-Bar)
+  const [tourOpen, setTourOpen] = useState(() => !tourSeen());
+  const closeTour = useCallback(() => {
+    markTourSeen();
+    setTourOpen(false);
+  }, []);
   const [toast, setToast] = useState<string | null>(null);
   const [mapFocus, setMapFocus] = useState<MapFocusRequest | null>(null);
 
@@ -126,6 +144,41 @@ export default function SunifyApp() {
   const reset = useCallback(() => setFilters((prev) => ({ ...defaultFilters(), origin: prev.origin })), []);
 
   const notify = useCallback((message: string) => setToast(message), []);
+
+  // „Meine Suchen“: Vorlagen ohne Zeitraum, nur im Browser gespeichert
+  const [presets, setPresets] = useState<SavedSearch[]>(loadPresets);
+  const changePresets = useCallback((next: SavedSearch[]) => {
+    setPresets(next);
+    if (!storePresets(next)) setToast(tr("Speichern ist in diesem Browser nicht möglich."));
+  }, []);
+  const applySaved = useCallback(
+    (preset: SavedSearch) => {
+      setFilters((prev) => applyPreset(prev, preset));
+      notify(tr("„{name}“ geladen – jetzt nur noch den Zeitraum wählen.", { name: preset.name }));
+    },
+    [notify]
+  );
+  const presetActions = useMemo(
+    () => ({
+      list: presets,
+      onApply: applySaved,
+      onSave: (name: string) => {
+        const existed = presets.some((p) => p.name.toLowerCase() === name.trim().toLowerCase());
+        const next = upsertPreset(presets, name, filters);
+        if (!next) return;
+        changePresets(next);
+        notify(tr(existed ? "„{name}“ aktualisiert" : "„{name}“ gespeichert", { name: name.trim() }));
+      },
+      onToggleDefault: (id: string) => {
+        const next = toggleDefault(presets, id);
+        changePresets(next);
+        const p = next.find((x) => x.id === id);
+        if (p) notify(p.isDefault ? tr("„{name}“ wird beim Start geladen", { name: p.name }) : tr("Start ohne Vorlage"));
+      },
+      onRemove: (id: string) => changePresets(removePreset(presets, id)),
+    }),
+    [presets, filters, applySaved, changePresets, notify]
+  );
 
   useEffect(() => {
     if (!toast) return;
@@ -331,6 +384,24 @@ export default function SunifyApp() {
       >
         {tr("Startort wählen")}
       </button>
+      {presets.length > 0 && (
+        <div data-testid="welcome-presets" className="mt-5 border-t border-ink-100 pt-4 text-left">
+          <h4 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{tr("Meine Suchen")}</h4>
+          <div className="flex flex-col gap-2">
+            {presets.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => applySaved(p)}
+                className="rounded-xl border border-ink-100 px-3 py-2 text-left transition hover:border-sun-300 hover:bg-sun-50"
+              >
+                <span className="block text-sm font-semibold text-ink-900">{p.name}</span>
+                <span className="block truncate text-[11.5px] text-ink-500">{presetSummary(p)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   ) : initialLoading ? (
     <div className="flex flex-col gap-3" aria-hidden="true">
@@ -403,7 +474,7 @@ export default function SunifyApp() {
 
           {/* Startort und Suchradius: erste Funktion auf dem Startbildschirm */}
           <div className="order-3 w-full lg:order-2 lg:mx-auto lg:w-auto lg:max-w-2xl lg:flex-1">
-            <StartBar filters={filters} onChange={update} onNotify={notify} />
+            <StartBar filters={filters} onChange={update} onNotify={notify} presets={presetActions} />
           </div>
 
           <div className="order-2 ml-auto flex h-10 shrink-0 items-center gap-2 lg:order-3">
@@ -411,6 +482,20 @@ export default function SunifyApp() {
               <SettingsSwitch />
             </div>
             <InstallButton />
+            <button
+              type="button"
+              onClick={() => {
+                setMobileFilters(false);
+                setSheetOpen(false);
+                setShowFavorites(false);
+                setTourOpen(true);
+              }}
+              title={tr("Kurzanleitung")}
+              aria-label={tr("Kurzanleitung")}
+              className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-medium ring-1 ring-white/10 transition hover:bg-white/20"
+            >
+              <CircleHelp className="h-4 w-4" />
+            </button>
             <button
               type="button"
               onClick={share}
@@ -634,6 +719,9 @@ export default function SunifyApp() {
           onClose={closeDetail}
         />
       )}
+
+      {/* Einführung beim ersten Besuch */}
+      {tourOpen && <OnboardingTour onClose={closeTour} />}
 
       {/* Toast */}
       {toast && (

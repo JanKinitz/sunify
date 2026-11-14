@@ -340,4 +340,68 @@ export const EN: Record<string, string> = {
   "Ab dem 8. Tag sind Wetterprognosen noch unsicher (gestrichelt markiert). Kurz vor der Reise lohnt sich ein zweiter Blick.":
     "From day 8, weather forecasts are still uncertain (dashed). It's worth checking again shortly before your trip.",
   "Für diesen Tag liegen noch keine Wetterdaten vor.": "No weather data for this day yet.",
+
+  // Meine Suchen (Vorlagen)
+  "Meine Suchen": "My searches",
+  "nur auf diesem Gerät": "on this device only",
+  "Speichere Startort, Umkreis und Wunschwetter als Vorlage – dann wählst du beim nächsten Mal nur noch den Zeitraum.":
+    "Save your starting point, radius and ideal weather as a template – next time you only pick the dates.",
+  "„{name}“ löschen?": "Delete “{name}”?",
+  "Löschen": "Delete",
+  "Abbrechen": "Cancel",
+  "Suche „{name}“ laden": "Load search “{name}”",
+  "aktiv": "active",
+  "„{name}“ beim Start laden": "Load “{name}” on start",
+  "Wird beim Start geladen": "Loaded on start",
+  "Beim Start laden": "Load on start",
+  "„{name}“ löschen": "Delete “{name}”",
+  "Aktuelle Suche speichern": "Save current search",
+  "z. B. Wochenende am Berg": "e.g. Mountain weekend",
+  "Überschreiben": "Overwrite",
+  "Speichern": "Save",
+  "Wähle zuerst einen Startort.": "Choose a starting point first.",
+  "Höchstens {n} Suchen – lösche zuerst eine.": "At most {n} searches – delete one first.",
+  "Gespeichert werden Startort, Umkreis und alle Filter, nicht der Zeitraum. ★ = beim Öffnen der App laden.":
+    "Saves starting point, radius and all filters, but not the dates. ★ = load when the app opens.",
+  "ab {temp}": "from {temp}",
+  "trocken": "dry",
+  "Wind bis {speed}": "wind up to {speed}",
+  "1 Std. Sonne": "1 h sunshine",
+  "{n} Std. Sonne": "{n} h sunshine",
+  "Speichern ist in diesem Browser nicht möglich.": "Saving isn't possible in this browser.",
+  "„{name}“ geladen – jetzt nur noch den Zeitraum wählen.": "“{name}” loaded – now just pick the dates.",
+  "„{name}“ gespeichert": "“{name}” saved",
+  "„{name}“ aktualisiert": "“{name}” updated",
+  "„{name}“ wird beim Start geladen": "“{name}” will load on start",
+  "Start ohne Vorlage": "Starting without a template",
+
+  // Einführung (Tour)
+  "Kurzanleitung": "Quick guide",
+  "Willkommen bei Sunify": "Welcome to Sunify",
+  "Sunify dreht die Wettersuche um: Du sagst, welches Wetter du dir wünschst – Sunify zeigt dir, wo es im Umkreis herrscht. Ideal für Ausflüge, Wochenenden und Kurzurlaube.":
+    "Sunify turns the weather search around: tell it the weather you want – Sunify shows you where nearby it will be. Perfect for day trips, weekends and short breaks.",
+  "Die Vorhersage reicht 16 Tage weit und wird mehrmals täglich aktualisiert.": "The forecast covers 16 days and is updated several times a day.",
+  "Kurz zeigen, wie es geht": "Show me how it works",
+  "Überspringen": "Skip",
+  "Zurück": "Back",
+  "Weiter": "Next",
+  "Los geht's": "Let's go",
+  "Schritt {n} von {total}": "Step {n} of {total}",
+  "1. Startort wählen": "1. Choose a starting point",
+  "Tippe einen Ort ein oder nutze 📍 für deinen aktuellen Standort. Von hier aus sucht Sunify.":
+    "Type a place or tap 📍 to use your current location. Sunify searches from here.",
+  "2. Umkreis festlegen": "2. Set the radius",
+  "Wie weit darf es höchstens sein? Gemessen wird in Luftlinie vom Startort.":
+    "How far are you willing to go? Measured as the crow flies from your starting point.",
+  "3. Wunschwetter einstellen": "3. Set your ideal weather",
+  "Zeitraum, Mindesttemperatur, Regen, Sonne und Wind. Profile wie „Wandern“ oder „Strand“ setzen passende Werte mit einem Klick.":
+    "Dates, minimum temperature, rain, sunshine and wind. Profiles like “Hiking” or “Beach” set suitable values in one click.",
+  "Unter „Filter“ stellst du Zeitraum, Mindesttemperatur, Regen, Sonne und Wind ein. Profile wie „Wandern“ oder „Strand“ setzen passende Werte mit einem Klick.":
+    "Under “Filters” you set dates, minimum temperature, rain, sunshine and wind. Profiles like “Hiking” or “Beach” set suitable values in one click.",
+  "4. Ergebnisse ansehen": "4. Explore the results",
+  "Karte und Liste zeigen, wo dein Wunschwetter herrscht. Gelb gestrichelt heißt knapp daneben, graue Punkte passen nicht.":
+    "Map and list show where your ideal weather will be. Dashed yellow means a near miss, grey dots don't match.",
+  "Tipp: Meine Suchen": "Tip: My searches",
+  "Speichere Startort, Umkreis und Filter als Vorlage – beim nächsten Mal wählst du nur noch den Zeitraum.":
+    "Save starting point, radius and filters as a template – next time you only pick the dates.",
 };
