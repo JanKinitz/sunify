@@ -74,15 +74,15 @@ test.describe("A Start", () => {
     await openApp(page);
     const expected = isMobile(page) ? "Startort" : "Startort eingeben …";
     await expect(originInput(page)).toHaveAttribute("placeholder", expected);
-    // Text passt ins Feld (scrollWidth würde bei abgeschnittenem Platzhalter nichts zeigen – daher Breite messen)
-    const fits = await originInput(page).evaluate((el: HTMLInputElement) => {
-      const style = getComputedStyle(el);
-      const c = document.createElement("canvas").getContext("2d")!;
-      c.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-      const free = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-      return c.measureText(el.placeholder).width <= free;
+    // Text passt ins Feld: Platzhalter kurz als Wert einsetzen (ohne Eingabe-Ereignis) und Breiten vergleichen
+    const m = await originInput(page).evaluate((el: HTMLInputElement) => {
+      const before = el.value;
+      el.value = el.placeholder;
+      const result = { scroll: el.scrollWidth, client: el.clientWidth };
+      el.value = before;
+      return result;
     });
-    expect(fits, "Platzhalter passt ins Feld").toBe(true);
+    expect(m.scroll, `Platzhalter passt ins Feld (Inhalt ${m.scroll} px, Feld ${m.client} px)`).toBeLessThanOrEqual(m.client + 1);
   });
 
   test("A7 Klick auf Logo/Schriftzug setzt alles zurück", async ({ page }) => {

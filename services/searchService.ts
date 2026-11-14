@@ -134,6 +134,37 @@ async function countMatches(db: Queryable, r: SearchRequest): Promise<number> {
   return Number(rows[0]?.total_count ?? 0);
 }
 
+interface PoolLike {
+  connect(): Promise<Queryable & { release(): void }>;
+}
+
+/**
+ * Zählung mit hartem Zeitlimit in der Datenbank: Nach Ablauf bricht PostgreSQL die Abfrage selbst ab.
+ * Sonst liefen nicht mehr benötigte Lockerungs-Zählungen weiter, hielten Verbindungen fest und bremsten
+ * die nächsten Suchen (im Test bis über 60 s „Suche läuft …“).
+ */
+async function countMatchesWithin(db: Queryable, r: SearchRequest, deadline: number): Promise<number> {
+  const pool = db as Partial<PoolLike>;
+  if (typeof pool.connect !== "function") return countMatches(db, r);
+  const client = await pool.connect();
+  try {
+    // Restzeit erst messen, wenn die Verbindung da ist (Wartezeit im Pool zählt mit)
+    const ms = Math.round(deadline - Date.now());
+    if (ms < 200) throw new Error("kein Zeitbudget mehr");
+    // SET LOCAL in einer Transaktion: gilt auch hinter einem Transaktions-Pooler nur für diese Abfrage
+    await client.query("BEGIN");
+    await client.query(`SET LOCAL statement_timeout = ${ms}`);
+    const n = await countMatches(client, r);
+    await client.query("COMMIT");
+    return n;
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 function precipModeOf(maxPrecip: number | null): PrecipMode {
   if (maxPrecip === null) return "any";
   return maxPrecip <= 0 ? "dry" : "almost";
@@ -185,9 +216,10 @@ async function findRelaxations(db: Queryable, r: SearchRequest): Promise<Relaxat
   if (r.category !== "all") candidates.push({ id: "category", changed: { ...r, category: "all" }, patch: { category: "all" }, rank: 0 });
 
   const counts = new Map<Candidate, number>();
+  const deadline = Date.now() + RELAX_BUDGET_MS;
   const work = Promise.all(
     candidates.map((c) =>
-      countMatches(db, c.changed)
+      countMatchesWithin(db, c.changed, deadline)
         .then((n) => void counts.set(c, n))
         .catch(() => undefined)
     )

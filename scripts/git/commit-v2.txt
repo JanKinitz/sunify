@@ -1,4 +1,8 @@
-Englische Texte: doppelten Eintrag entfernen (Build-Fehler)
+Lockerungs-Zaehlungen nach Zeitbudget in der DB abbrechen; Test A6 korrigiert
+
+Nicht mehr benoetigte Zaehlungen liefen weiter, hielten Verbindungen fest und
+bremsten folgende Suchen (H2 auf Android > 60 s, mehrere wackelige Tests).
+Jetzt SET LOCAL statement_timeout je Zaehlung. A6 misst die echte Textbreite.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

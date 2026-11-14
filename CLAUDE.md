@@ -143,7 +143,7 @@ Workflows (`.github/workflows/`; Kopie in `scripts/github-workflows/`, beide gle
 | `components/ResultList.tsx` | Ergebniskarten mit Foto (`PhotoHeader`), Fast-Treffer-Abschnitt |
 | `components/DetailDrawer.tsx` | Detail mit Foto, Tages-Nachweis (ok/knapp/verfehlt), Conversion-Box |
 | `components/SettingsSwitch.tsx` | DE/EN, °C/°F, „App installieren“ |
-| `services/searchService.ts` | Validierung, `search_destinations_v2` (Treffer + graue Punkte), danach EINE Abfrage für Stammdaten/Prognosen, Lockerungsvorschläge (parallel, Zeitbudget 8 s, Pool max. 4); `meta.timings` |
+| `services/searchService.ts` | Validierung, `search_destinations_v2` (Treffer + graue Punkte), danach EINE Abfrage für Stammdaten/Prognosen, Lockerungsvorschläge (parallel, Zeitbudget 8 s per `SET LOCAL statement_timeout` – abgelaufene Zählungen bricht die DB ab, Pool max. 4); `meta.timings` |
 | `pipeline/` | Python: `seed.py`, `grid.py`, `scoring.py`, `wikidata.py`, `gfs.py`, `openmeteo.py`, `weather.py` |
 | `e2e/` | Testbibliothek: `TESTFAELLE.md` (Katalog), `*.spec.ts` (Playwright), `helpers.ts` |
 | `components/UpdateNotice.tsx` | Update-Erkennung nach neuen Veröffentlichungen |
