@@ -1,11 +1,10 @@
 "use client";
 
-// Screen 4: Orts-Detailansicht & Conversion-Drawer (Slide-Over auf Desktop, Sheet auf Mobile).
+// Screen 4: Orts-Detailansicht (Slide-Over auf Desktop, Sheet auf Mobile) mit Wetter-Nachweis und Route.
 
 import { useEffect } from "react";
 import {
   BadgeCheck,
-  BedDouble,
   Car,
   Check,
   CircleAlert,
@@ -17,14 +16,13 @@ import {
   Mountain,
   Navigation,
   Sun,
-  Tent,
   Thermometer,
   Wind,
   X,
 } from "lucide-react";
 import { countryName } from "@/lib/api";
 import { anyTemp, anyWind } from "@/lib/categories";
-import { addDays, formatDayMonth, formatRange, formatShort, weekdayShort } from "@/lib/dates";
+import { addDays, formatDayMonth, formatRange, weekdayShort } from "@/lib/dates";
 import {
   fmtDist,
   fmtPrecip,
@@ -42,13 +40,7 @@ import { useI18n } from "@/lib/i18n-react";
 import { checkDay, formatDriveTime, isUncertainDay, maxPrecipFor } from "@/lib/search";
 import type { CheckState, DailyForecast, Filters, SearchResult } from "@/lib/types";
 import { tempColor, weatherEmoji, weatherLabel } from "@/lib/weather";
-import {
-  generateAccommodationLink,
-  generateAppleMapsRoute,
-  generateCampingLink,
-  generateGoogleMapsRoute,
-  getStayDates,
-} from "@/utils/affiliateLinks";
+import { generateAppleMapsRoute, generateGoogleMapsRoute } from "@/utils/routeLinks";
 import { PhotoHeader } from "./ResultList";
 
 interface DetailDrawerProps {
@@ -186,16 +178,6 @@ export default function DetailDrawer({
   const inRadius = result.distanceKm <= filters.radiusKm;
   const strict = isMatch && result.strict !== false;
   const near = isMatch && result.strict === false;
-
-  const stay = getStayDates(filters.startDate, filters.endDate);
-  const bookingUrl = generateAccommodationLink({
-    cityName: d.name,
-    countryCode: d.countryCode,
-    lat: d.lat,
-    lon: d.lon,
-    startDate: filters.startDate,
-    endDate: filters.endDate,
-  });
 
   const maxP = maxPrecipFor(filters.precipMode);
   const precipCriterion = Number.isFinite(maxP) ? `≤ ${fmtPrecip(maxP)}` : tr("Regen egal");
@@ -439,44 +421,6 @@ export default function DetailDrawer({
             </p>
           </section>
 
-          {/* Conversion Box */}
-          <section className="overflow-hidden rounded-2xl border-2 border-sun-300 bg-gradient-to-b from-sun-50 to-white shadow-soft">
-            <div className="p-4">
-              <div className="flex items-center gap-2 text-sun-700">
-                <BedDouble className="h-5 w-5" />
-                <span className="text-xs font-bold uppercase tracking-wide">{tr("Unterkunft sichern")}</span>
-              </div>
-              <h3 className="mt-1.5 text-base font-bold leading-snug text-ink-900">
-                {trn(stay.nights, "Passende Unterkünfte in {name} für {from} – {to} ({n} Nacht)", "Passende Unterkünfte in {name} für {from} – {to} ({n} Nächte)", {
-                  name: d.name,
-                  from: formatShort(stay.checkin),
-                  to: formatShort(stay.checkout),
-                })}
-              </h3>
-              <a
-                href={bookingUrl}
-                target="_blank"
-                rel="noopener noreferrer sponsored"
-                className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[#003b95] px-4 py-3.5 text-center text-sm font-bold leading-snug text-white shadow-soft transition hover:bg-[#002a6b] active:scale-[.99]"
-              >
-                {tr("Jetzt verfügbare Hotels & Ferienwohnungen auf Booking.com prüfen")}
-                <ExternalLink className="h-4 w-4 shrink-0" />
-              </a>
-              <a
-                href={generateCampingLink(d.name)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-ink-200 bg-white px-4 py-2.5 text-center text-[13px] font-semibold text-ink-800 transition hover:border-sun-400"
-              >
-                <Tent className="h-4 w-4 text-ink-500" />
-                {tr("Camping- & Wohnmobilstellplätze in der Nähe suchen")}
-                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-ink-400" />
-              </a>
-            </div>
-            <p className="border-t border-sun-100 bg-white/70 px-4 py-2 text-[11px] text-ink-400">
-              {tr("Anzeige · Datum und Ort sind bereits vorausgefüllt. Bei einer Buchung erhält Sunify ggf. eine Provision.")}
-            </p>
-          </section>
         </div>
       </div>
     </div>

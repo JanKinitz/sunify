@@ -239,7 +239,7 @@ export function ResultCard({
           onClick={() => onSelect(d.id)}
           className="mt-4 flex w-full items-center justify-center gap-1 rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sun-600 active:scale-[.99]"
         >
-          {tr("Details & Unterkünfte")}
+          {tr("Details ansehen")}
           <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
         </button>
       </div>

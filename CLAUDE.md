@@ -25,8 +25,9 @@ Vollständige Spezifikation: `SPEC.md` (nur lokal, nicht im öffentlichen Reposi
    Auf dem Handy klappt die Liste bei 0 Treffern von selbst auf (einmal je Ergebnis).
 5. **Zugangsdaten** nur in `.env.local` bzw. als GitHub-/Netlify-Secrets. Nie ausgeben, nie committen.
    Vor jedem Commit läuft `scripts/git-safety-check.mjs`. Das Repository ist **öffentlich**.
-6. **Affiliate:** Booking.com-Deep-Link mit Ort, Koordinaten, Check-in/Check-out in der App-Sprache
-   (`utils/affiliateLinks.ts`). Einzelner Tag ⇒ Check-out = Start + 1 Tag.
+6. **Nicht-kommerziell:** keine Unterkunfts-, Buchungs-, Affiliate- oder Werbelinks, keine Provisionshinweise
+   (Booking-Box Nov. 2026 entfernt). Externe Links nur zu Routen (`utils/routeLinks.ts`: Google/Apple Maps).
+   Die freien Datenquellen (u. a. Open-Meteo) erlauben nur nicht-kommerzielle Nutzung.
 
 ## Release-Ablauf (Pflicht)
 
@@ -51,7 +52,7 @@ Vollständige Spezifikation: `SPEC.md` (nur lokal, nicht im öffentlichen Reposi
 
 | Teil | Wo | Was |
 |---|---|---|
-| App | Netlify (gratis, kommerziell erlaubt) | Next.js 15, `POST /api/search`, `GET /api/status` |
+| App | Netlify (Gratis-Tarif) | Next.js 15, `POST /api/search`, `GET /api/status` |
 | Datenjobs | GitHub Actions (öffentliches Repo ⇒ unbegrenzte Minuten) | Python-Pipeline `pipeline/` |
 | Datenbank | Supabase (eigenes Projekt für 2.0) | PostGIS, Migrationen in `supabase/migrations/` |
 
@@ -144,7 +145,7 @@ Workflows (`.github/workflows/`; Kopie in `scripts/github-workflows/`, beide gle
 | `components/OnboardingTour.tsx` | Einführung für Erstbesucher (Willkommen + Schritte mit Markierung) |
 | `components/FilterPanel.tsx` | Profile, Zeitraum, Wunschwetter, Toleranz, Orts-Charakter |
 | `components/ResultList.tsx` | Ergebniskarten mit Foto (`PhotoHeader`), Fast-Treffer-Abschnitt |
-| `components/DetailDrawer.tsx` | Detail mit Foto, Tages-Nachweis (ok/knapp/verfehlt), Conversion-Box |
+| `components/DetailDrawer.tsx` | Detail mit Foto, Tages-Nachweis (ok/knapp/verfehlt), Route (Google/Apple Maps) |
 | `components/SettingsSwitch.tsx` | DE/EN, °C/°F, „App installieren“ |
 | `services/searchService.ts` | Validierung, `search_destinations_v2` (Treffer + graue Punkte), danach EINE Abfrage für Stammdaten/Prognosen, Lockerungsvorschläge (parallel, Zeitbudget 8 s per `SET LOCAL statement_timeout` – abgelaufene Zählungen bricht die DB ab, Pool max. 4); `meta.timings` |
 | `pipeline/` | Python: `seed.py`, `grid.py`, `scoring.py`, `wikidata.py`, `gfs.py`, `openmeteo.py`, `weather.py` |

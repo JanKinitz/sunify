@@ -1,8 +1,9 @@
-Handy: Startort-Feld bekommt Platz, B6 ohne Service Worker
+Unterkuenfte, Booking-Link und Provisionshinweis entfernt (nicht-kommerziell)
 
-Test A6 hat gezeigt: das Startort-Feld war auf dem Handy nur 47-73 px breit.
-Umkreis zeigt dort jetzt nur "200 km", Abstaende kleiner.
-B6: Service Worker blockieren, sonst greift das Anhalten der Suche nicht.
+- Detailansicht ohne Unterkunfts-Box (Booking.com, Camping) und ohne Provisionshinweis
+- utils/affiliateLinks.ts -> utils/routeLinks.ts (nur noch Google/Apple-Maps-Route)
+- Button in der Liste heisst "Details ansehen"
+- Affiliate-ID aus .env.example entfernt, Test C2 prueft: keine Buchungslinks
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

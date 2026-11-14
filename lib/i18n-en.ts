@@ -150,7 +150,7 @@ export const EN: Record<string, string> = {
   "Fast-Treffer: {pct} % Übereinstimmung": "Near match: {pct} % agreement",
   "Keine vollen Treffer – diese Orte passen fast": "No full matches – these places are close",
   "100 % Treffer für {range}": "100 % match for {range}",
-  "Details & Unterkünfte": "Details & accommodation",
+  "Details ansehen": "View details",
   "Diese Orte auf der Karte zeigen": "Show these places on the map",
   "weiterer Ort mit ähnlichem Wetter in der Nähe": "more place nearby with similar weather",
   "weitere Orte mit ähnlichem Wetter in der Nähe": "more places nearby with similar weather",
@@ -243,13 +243,6 @@ export const EN: Record<string, string> = {
   "Deine Kriterien": "Your criteria",
   "Std. Sonne": "h of sun",
   "Temperaturen sind auf die Höhenlage des Orts umgerechnet.": "Temperatures are adjusted to the place's elevation.",
-  "Unterkunft sichern": "Book accommodation",
-  "Passende Unterkünfte in {name} für {from} – {to} ({n} Nacht)": "Accommodation in {name} for {from} – {to} ({n} night)",
-  "Passende Unterkünfte in {name} für {from} – {to} ({n} Nächte)": "Accommodation in {name} for {from} – {to} ({n} nights)",
-  "Jetzt verfügbare Hotels & Ferienwohnungen auf Booking.com prüfen": "Check available hotels & holiday rentals on Booking.com",
-  "Camping- & Wohnmobilstellplätze in der Nähe suchen": "Find campsites & motorhome pitches nearby",
-  "Anzeige · Datum und Ort sind bereits vorausgefüllt. Bei einer Buchung erhält Sunify ggf. eine Provision.":
-    "Ad · Date and place are already filled in. Sunify may receive a commission if you book.",
 
   // Wetterbeschreibungen
   "Sonnig": "Sunny",

@@ -17,20 +17,21 @@ test.describe("C Ergebnisse", () => {
     await expect(sort).toHaveValue("distance");
   });
 
-  test("C2 Detailansicht: Wetter-Timeline, Buchungslink, Schließen", async ({ page }) => {
+  test("C2 Detailansicht: Wetter-Timeline, Route, keine Buchungs- oder Werbelinks, Schließen", async ({ page }) => {
     await openApp(page, BROAD_SEARCH);
     await waitForSearchDone(page);
     const list = await openResults(page);
     const card = list.getByTestId("result-card").first();
     const name = (await card.locator("h3").first().textContent())?.trim() ?? "";
-    await card.getByRole("button", { name: /Details & Unterkünfte/ }).click();
+    await card.getByRole("button", { name: /Details ansehen/ }).click();
 
     const dialog = page.getByRole("dialog", { name: /Details zu/ });
     await expect(dialog).toBeVisible();
     if (name) await expect(dialog).toContainText(name);
     await expect(dialog.getByText("Wetter-Timeline")).toBeVisible();
-    const booking = dialog.getByRole("link", { name: /Booking\.com/ });
-    await expect(booking).toHaveAttribute("href", /checkin=\d{4}-\d{2}-\d{2}.*checkout=\d{4}-\d{2}-\d{2}/);
+    // Sunify ist nicht-kommerziell: keine Unterkunfts-, Buchungs- oder Partner-Links, kein Provisionshinweis
+    await expect(dialog).not.toContainText(/Unterkunft|Unterkünfte|Booking|Provision|Anzeige/);
+    await expect(dialog.locator('a[href*="booking.com"], a[rel*="sponsored"]')).toHaveCount(0);
     await expect(dialog.getByRole("link", { name: /Google Maps/ })).toHaveAttribute("href", /google\.com\/maps/);
 
     if (isMobile(page)) await dialog.getByRole("button", { name: "Schließen", exact: true }).click();
@@ -101,7 +102,7 @@ test.describe("C Ergebnisse", () => {
     await waitForSearchDone(page);
     const list = await openResults(page);
     await expect(list.getByTestId("uncertainty-hint")).toBeVisible();
-    await list.getByTestId("result-card").first().getByRole("button", { name: /Details & Unterkünfte/ }).click();
+    await list.getByTestId("result-card").first().getByRole("button", { name: /Details ansehen/ }).click();
     await expect(page.getByRole("dialog", { name: /Details zu/ }).getByTestId("trend-badge").first()).toBeVisible();
   });
 
@@ -110,7 +111,7 @@ test.describe("C Ergebnisse", () => {
     await waitForSearchDone(page);
     const list = await openResults(page);
     await expect(list.getByTestId("uncertainty-hint")).toHaveCount(0);
-    await list.getByTestId("result-card").first().getByRole("button", { name: /Details & Unterkünfte/ }).click();
+    await list.getByTestId("result-card").first().getByRole("button", { name: /Details ansehen/ }).click();
     const dialog = page.getByRole("dialog", { name: /Details zu/ });
     // Vortag als Wettertag oder – ohne Daten – als Platzhalter, aber nie einfach weggelassen
     await expect(dialog.getByText("Vortag", { exact: true })).toBeVisible();

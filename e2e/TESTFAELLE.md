@@ -44,7 +44,7 @@ nicht bestimmte Orte oder Temperaturen. Sie arbeiten mit zwei festen Suchen: ein
 | ID | Testfall | Erwartung |
 |---|---|---|
 | C1 | Ergebnisliste der breiten Suche | mehrere Ergebniskarten mit Temperatur; Sortierung „Kürzeste Entfernung“ wählbar |
-| C2 | „Details & Unterkünfte“ öffnen | Detailansicht mit Ortsname, Wetter-Timeline, Booking-Link mit Check-in/-out, Google-Maps-Route; schließt per Escape bzw. „Schließen“ |
+| C2 | „Details ansehen“ öffnen | Detailansicht mit Ortsname, Wetter-Timeline, Google-Maps-Route; **keine** Unterkunfts-/Buchungs-/Partner-Links und kein Provisionshinweis; schließt per Escape bzw. „Schließen“ |
 | C3 | Ort merken, neu laden, Merkliste öffnen, entfernen | Hinweis „gemerkt“, Ort bleibt nach Neuladen in der Merkliste, Entfernen leert sie |
 | C4 | Unmögliche Suche | Leerzustand „Hier versteckt sich die Sonne noch“ mit „Alle Filter zurücksetzen“, nie eine leere Seite |
 | C5 | „Suche teilen“ | Hinweis, dass der Link kopiert wurde |
@@ -135,3 +135,4 @@ Hinweis: `openApp` markiert die Einführung für alle anderen Tests als gesehen.
 | 14.11.2026 | 2.0 | Handy: bei 0 Treffern klappt die Liste mit den Vorschlägen von selbst auf (F6); Toleranz-Vorschlag prüft „Etwas flexibel“ und „Flexibel“ zuerst |
 | 14.11.2026 | 2.0 | A6 misst über die tatsächliche Textbreite im Feld (vorher Canvas-Messung, falsch rot) |
 | 14.11.2026 | 2.0 | A6 hat echtes Platzproblem gefunden (Feld auf dem Handy 47–73 px): Umkreis zeigt dort nur „200 km“; B6 ohne Service Worker (sonst greift das Anhalten der Suche nicht) |
+| 14.11.2026 | 2.0 | Unterkünfte, Booking-Link und Provisionshinweis entfernt (nicht-kommerziell); Button heißt „Details ansehen“ (C2) |
