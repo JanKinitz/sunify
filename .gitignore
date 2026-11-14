@@ -27,3 +27,6 @@ SPEC.md
 # Testberichte (Playwright)
 e2e/report/
 e2e/results/
+
+# Ablage für Dateien aus dem Claude-Chat (nicht Teil der App)
+Claude outputs/

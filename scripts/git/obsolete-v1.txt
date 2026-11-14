@@ -22,3 +22,4 @@ supabase/migrations/20261111000002_search_function.sql
 supabase/migrations/20261111000003_search_function_plan.sql
 components/AiSearchBar.tsx
 lib/aiParse.ts
+Claude outputs
