@@ -4,6 +4,7 @@
   python -m pipeline seed             Orte und Raster weltweit neu aufbauen (löscht auch Prognosen)
   python -m pipeline weather-om       Open-Meteo für Zentraleuropa (1× täglich)
   python -m pipeline weather-gfs      GFS weltweit (bis 4× täglich)
+  python -m pipeline images           fehlende Ortsfotos nachtragen (nachts, in Etappen)
   python -m pipeline status           Datenbankstand ausgeben
 """
 
@@ -58,6 +59,10 @@ def main(argv: list[str]) -> int:
 
         data = seed.collect()  # Download und Auswertung ohne Datenbankverbindung (kann lange dauern)
         return _job("seed", lambda conn: {**data["stats"], **seed.write(conn, data)})
+    if cmd == "images":
+        from . import images
+
+        return _job("images", images.run)
     if cmd == "weather-gfs":
         from . import weather
 

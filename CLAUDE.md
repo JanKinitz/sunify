@@ -63,6 +63,8 @@ Workflows (`.github/workflows/`; Kopie in `scripts/github-workflows/`, beide gle
   neuen Laufs werden aus dem gespeicherten Lauf übernommen (`extend_back`), damit „heute“ nicht wegfällt.
 - Alle Daten-Workflows führen vorher die Unit-Tests `pipeline/tests/` aus (Datumsberechnung je Zeitzone u. a.) und
   spielen die Migrationen ein (sonst Wettlauf mit der Veröffentlichung bei Schemaänderungen).
+- `images.yml`: nachts 01:10 UTC (und manuell) `python -m pipeline images` – fehlende Ortsfotos nachtragen,
+  max. 320 min je Lauf, bekannteste Orte zuerst, bis alle geprüft sind (anfangs mehrere Nächte).
 - `weather-openmeteo.yml`: täglich 04:15 UTC Open-Meteo für Mitteleuropa (Box 43–56° N, 2–20° O, max. 8.000 Punkte).
 - `deploy-netlify.yml`: bei jedem Push auf `main`: SQL-Migrationen (`python -m pipeline migrate`, idempotent),
   Vorschau-Deploy (`--alias v-<sha>`, Secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`) → `e2e.yml` gegen die Vorschau →
@@ -73,7 +75,13 @@ Workflows (`.github/workflows/`; Kopie in `scripts/github-workflows/`, beide gle
 
 - **Orte:** GeoNames `cities1000` weltweit + `alternateNamesV2` (de/en) + Wikidata (Sitelinks, Bild P18, Art:
   Kurort, Seebad, Skigebiet, Denkmal, am See/Meer). Fotos von Wikimedia Commons nur mit freier Lizenz
-  (CC0, CC BY, CC BY-SA, PD) inkl. Urheber und Lizenz (`image_author`, `image_license`), ab Score 40.
+  (CC0, CC BY, CC BY-SA, PD) inkl. Urheber und Lizenz (`image_author`, `image_license`), ab Score 35.
+- **Nachgetragene Fotos** (`pipeline/images.py`, Tabelle `place_images`, Schlüssel GeoNames-ID – übersteht `seed`):
+  für Orte ohne Foto 1) Wikidata P18, 2) Commons-Kategorie des Orts (P373), 3) Commons-Umkreis 2 km nur mit
+  Ortsname im Dateinamen. Bei 2/3 nur Ortsansichten (`VIEW`), ohne Innenräume/Essen/Fahrzeuge/ISS u. Ä. (`BAD`) –
+  Auswertung Nov. 2026: ohne diese Regeln jedes vierte Foto unpassend. Die Suche nimmt `COALESCE(d.image_file,
+  place_images.image_file)`. Kein Fund → `image_file` NULL, erneuter Versuch nach 60 Tagen. Ohne Foto zeigt die
+  Karte einen Farbverlauf mit Emoji (`PhotoHeader`).
 - **Tourismus-Score** (0–100): Heuristik aus Wikipedia-Sitelinks, Einwohnern, Arten (`pipeline/scoring.py`);
   kuratierte DACH-Liste `pipeline/data/curated_destinations.json` überschreibt.
 - **Raster (adaptiv):** nur dort, wo Orte liegen. 0,25° bei ≥ 40 Orten oder ≥ 800 m Höhenspanne, 0,5° bei ≥ 8 Orten

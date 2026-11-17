@@ -117,9 +117,13 @@ WITH ids AS (SELECT unnest($1::int[]) AS id),
 d AS (
   SELECT d.destination_id, d.name, d.name_de, d.name_en, d.country_code, d.admin_region, d.admin_region_de,
          d.admin_region_en, d.lat, d.lon, d.elevation, d.population, d.tourism_score, d.tags, d.grid_id,
-         d.image_file, d.image_author, d.image_license,
+         -- Foto aus dem Neuaufbau, sonst nachgetragenes (pipeline/images.py)
+         COALESCE(d.image_file, pi.image_file) AS image_file,
+         CASE WHEN d.image_file IS NOT NULL THEN d.image_author ELSE pi.image_author END AS image_author,
+         CASE WHEN d.image_file IS NOT NULL THEN d.image_license ELSE pi.image_license END AS image_license,
          LEAST(8, GREATEST(-8, (COALESCE(g.elevation, d.elevation, 0) - COALESCE(d.elevation, g.elevation, 0)) * 0.0065)) AS corr
   FROM destinations d JOIN weather_grid g ON g.grid_id = d.grid_id
+  LEFT JOIN place_images pi ON pi.geoname_id = d.geoname_id AND d.image_file IS NULL
   WHERE d.destination_id IN (SELECT id FROM ids)
 )
 SELECT

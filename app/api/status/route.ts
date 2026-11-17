@@ -12,7 +12,9 @@ export async function GET() {
     const counts = await db.query(
       `SELECT (SELECT COUNT(*) FROM weather_grid)::int AS grid_points,
               (SELECT COUNT(*) FROM destinations)::int AS destinations,
-              (SELECT COUNT(*) FROM destinations WHERE image_file IS NOT NULL)::int AS with_photo,
+              (SELECT COUNT(*) FROM destinations d WHERE d.image_file IS NOT NULL
+                 OR EXISTS (SELECT 1 FROM place_images p WHERE p.geoname_id = d.geoname_id AND p.image_file IS NOT NULL))::int AS with_photo,
+              (SELECT COUNT(*) FROM place_images WHERE image_file IS NOT NULL)::int AS photos_added,
               (SELECT COUNT(*) FROM weather_forecasts)::int AS forecasts,
               (SELECT COUNT(*) FROM weather_grid WHERE source = 'open-meteo')::int AS open_meteo_points,
               (SELECT MIN(start_date)::text FROM weather_forecasts) AS first_day,

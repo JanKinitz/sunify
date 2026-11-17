@@ -6,11 +6,12 @@ import os
 import time
 
 from . import geonames, wikidata
+from .images import NOT_A_PHOTO
 from .grid import build_grid, choose_open_meteo
 from .scoring import apply_curated, derive_tags, score_place
 
 OPEN_METEO_MAX_POINTS = int(os.environ.get("OPEN_METEO_MAX_POINTS", "8000"))
-IMAGE_MIN_SCORE = int(os.environ.get("IMAGE_MIN_SCORE", "40"))
+IMAGE_MIN_SCORE = int(os.environ.get("IMAGE_MIN_SCORE", "35"))  # = Mindest-Score der sichtbaren Orte
 
 
 def log(msg: str) -> None:
@@ -69,7 +70,8 @@ def collect() -> dict:
 
     log("5/6 Bildnachweise (Wikimedia Commons)")
     files = sorted(
-        {wiki[p.geoname_id][1] for p in places if p.geoname_id in wiki and wiki[p.geoname_id][1] and scores[p.geoname_id] >= IMAGE_MIN_SCORE}
+        {wiki[p.geoname_id][1] for p in places if p.geoname_id in wiki and wiki[p.geoname_id][1]
+         and scores[p.geoname_id] >= IMAGE_MIN_SCORE and not NOT_A_PHOTO.search(wiki[p.geoname_id][1])}
     )
     credits = wikidata.fetch_image_credits(files)
     log(f"   {len(credits)} von {len(files)} Fotos mit freier Lizenz")

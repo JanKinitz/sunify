@@ -1,0 +1,36 @@
+# Fehlende Ortsfotos nachtragen (Wikidata/Wikimedia Commons, frei lizenziert) – nachts in Etappen.
+# Prüft die bekanntesten Orte zuerst; Orte ohne Fund werden vermerkt und erst nach 60 Tagen erneut geprüft.
+name: Ortsfotos nachtragen
+
+on:
+  schedule:
+    - cron: "10 1 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: images
+  cancel-in-progress: false
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+      - run: pip install -r pipeline/requirements.txt
+      - name: Prüfungen der Datenaufbereitung (Unit-Tests)
+        run: python -m unittest discover -s pipeline/tests -t .
+      - name: Datenbank-Schema aktualisieren (Migrationen, idempotent)
+        run: python -m pipeline migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Fotos suchen und speichern
+        run: python -m pipeline images
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          IMAGES_MAX_MINUTES: "320"

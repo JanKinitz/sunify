@@ -1,9 +1,11 @@
-Unterkuenfte, Booking-Link und Provisionshinweis entfernt (nicht-kommerziell)
+Fehlende Ortsfotos nachtragen (Wikidata/Commons, frei lizenziert)
 
-- Detailansicht ohne Unterkunfts-Box (Booking.com, Camping) und ohne Provisionshinweis
-- utils/affiliateLinks.ts -> utils/routeLinks.ts (nur noch Google/Apple-Maps-Route)
-- Button in der Liste heisst "Details ansehen"
-- Affiliate-ID aus .env.example entfernt, Test C2 prueft: keine Buchungslinks
+- Neuer Datenschritt `python -m pipeline images` (nachts, in Etappen): Wikidata-Hauptbild,
+  Commons-Kategorie des Orts, Commons-Umkreis nur mit Ortsname; nur Ortsansichten,
+  keine Innenraeume/Essen/Fahrzeuge/ISS-Aufnahmen (Auswertung vom 17.11.)
+- Tabelle place_images (uebersteht Neuaufbau), Suche nimmt das Foto als Ersatz
+- Foto-Schwelle beim Neuaufbau 35 statt 40, Karten/Grafiken nie als Foto
+- Unit-Tests mit echten Fehlgriffen, /api/status zaehlt nachgetragene Fotos
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_014UrJUTM3gR12ExiVBPxz8J

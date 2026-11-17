@@ -136,3 +136,4 @@ Hinweis: `openApp` markiert die Einführung für alle anderen Tests als gesehen.
 | 14.11.2026 | 2.0 | A6 misst über die tatsächliche Textbreite im Feld (vorher Canvas-Messung, falsch rot) |
 | 14.11.2026 | 2.0 | A6 hat echtes Platzproblem gefunden (Feld auf dem Handy 47–73 px): Umkreis zeigt dort nur „200 km“; B6 ohne Service Worker (sonst greift das Anhalten der Suche nicht) |
 | 14.11.2026 | 2.0 | Unterkünfte, Booking-Link und Provisionshinweis entfernt (nicht-kommerziell); Button heißt „Details ansehen“ (C2) |
+| 17.11.2026 | 2.0 | Fotos: Datenschritt `images` trägt fehlende Ortsfotos nach (Unit-Tests `pipeline/tests/test_images.py` mit echten Fehlgriffen aus der Auswertung); Oberfläche unverändert |
