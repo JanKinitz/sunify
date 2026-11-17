@@ -15,6 +15,7 @@ import re
 import sys
 import time
 import urllib.parse
+import urllib.error
 import urllib.request
 
 from pipeline.db import connect
@@ -34,14 +35,19 @@ NOT_A_PHOTO = re.compile(
 def get(url: str, data: dict | None = None, timeout: int = 60):
     body = urllib.parse.urlencode(data).encode() if data else None
     req = urllib.request.Request(url, data=body, headers={"User-Agent": UA, "Accept": "application/json"})
-    for attempt in range(3):
+    for attempt in range(6):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return json.loads(r.read())
-        except Exception:  # noqa: BLE001
-            if attempt == 2:
+        except urllib.error.HTTPError as e:
+            if attempt == 5 or e.code not in (429, 500, 502, 503, 504):
                 raise
-            time.sleep(3)
+            wait = int(e.headers.get("Retry-After") or 0) or 10 * (attempt + 1)
+            time.sleep(min(wait, 60))
+        except Exception:  # noqa: BLE001
+            if attempt == 5:
+                raise
+            time.sleep(5)
 
 
 def section(t):
@@ -154,6 +160,7 @@ def main():
     by_region = {"Europa": [0, 0], "Rest": [0, 0]}
     examples = []
     for gid, name, cc, lat, lon, score in smp:
+      try:
         region = "Europa" if 35 <= lat <= 71 and -11 <= lon <= 40 else "Rest"
         by_region[region][0] += 1
         e = extra.get(gid, {})
@@ -193,7 +200,9 @@ def main():
             by_region[region][1] += 1
             if len(examples) < 60:
                 examples.append((how, name, cc, score, found))
-        time.sleep(0.2)
+        time.sleep(1.0)
+      except Exception as e:  # noqa: BLE001
+        print(f"  übersprungen {name}: {e}")
     n = len(smp)
     for k, v in hits.items():
         print(f"  {k:<12} {v:>4} von {n}  ({100 * v / n:4.1f} %)")
