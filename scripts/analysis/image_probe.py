@@ -32,6 +32,41 @@ NOT_A_PHOTO = re.compile(
 )
 
 
+import unicodedata
+
+# offensichtlich keine Ortsansicht
+BAD = re.compile(
+    r"(iss\d|view of earth|astronaut|satellite|sentinel|interior|innenansicht|innenraum|inside|altar|orgel|organ\b|"
+    r"fresco|fresko|gem[aä]lde|painting|food|essen|restaurant|menu|dish|tempura|kindergarten|school|schule|"
+    r"logs\b|insect|bird|vogel|flower|blume|bl[uü]te|mushroom|pilz|museum exhibit|exponat|statue|skulptur|"
+    r"sign\b|schild|plaque|tafel|inscription|grabstein|gravestone|car\b|auto\b|bus\b|locomotive|lokomotive|train|zug\b)",
+    re.I,
+)
+GOOD = re.compile(r"(panorama|view|blick|ansicht|vista|veduta|aerial|luftbild|drone|dji|overview|skyline|centre|center|zentrum|centro|ortsbild|village|dorf)", re.I)
+
+
+def norm(t: str) -> str:
+    t = unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", " ", t).strip()
+
+
+def name_in(file: str, place: str) -> bool:
+    words = [w for w in norm(place).split() if len(w) >= 4 and w not in ("sankt", "saint", "santa", "santo", "bad", "san")]
+    f = norm(file)
+    return bool(words) and words[0] in f
+
+
+def pick(cands, place):
+    """Bestes Foto: Ortsname im Dateinamen, Ansicht/Panorama bevorzugt, sonst größtes."""
+    ok = []
+    for name, lic, w, h in cands:
+        if NOT_A_PHOTO.search(name) or BAD.search(name) or not ALLOWED.match(lic) or w < 800 or h > w:
+            continue
+        ok.append(((name_in(name, place), bool(GOOD.search(name)), w * h), name))
+    ok.sort(reverse=True)
+    return ok[0][1] if ok else None
+
+
 def get(url: str, data: dict | None = None, timeout: int = 60):
     body = urllib.parse.urlencode(data).encode() if data else None
     req = urllib.request.Request(url, data=body, headers={"User-Agent": UA, "Accept": "application/json"})
@@ -85,9 +120,9 @@ def sample(cur, n=240):
 
 
 def wikidata_extra(gids):
-    q = """SELECT ?gn ?p18 ?banner ?pano ?aerial ?night ?collage ?de ?en WHERE {
+    q = """SELECT ?gn ?p18 ?cat ?banner ?pano ?aerial ?night ?collage ?de ?en WHERE {
       VALUES ?gn { %s } ?item wdt:P1566 ?gn .
-      OPTIONAL { ?item wdt:P18 ?p18 } OPTIONAL { ?item wdt:P948 ?banner } OPTIONAL { ?item wdt:P4291 ?pano } OPTIONAL { ?item wdt:P8592 ?aerial }
+      OPTIONAL { ?item wdt:P18 ?p18 } OPTIONAL { ?item wdt:P373 ?cat } OPTIONAL { ?item wdt:P948 ?banner } OPTIONAL { ?item wdt:P4291 ?pano } OPTIONAL { ?item wdt:P8592 ?aerial }
       OPTIONAL { ?item wdt:P3451 ?night } OPTIONAL { ?item wdt:P2716 ?collage }
       OPTIONAL { ?de schema:about ?item ; schema:isPartOf <https://de.wikipedia.org/> }
       OPTIONAL { ?en schema:about ?item ; schema:isPartOf <https://en.wikipedia.org/> }
@@ -100,6 +135,8 @@ def wikidata_extra(gids):
         for k in ("p18", "banner", "pano", "aerial", "night", "collage"):
             if k in b and k not in d:
                 d[k] = urllib.parse.unquote(b[k]["value"].rsplit("/", 1)[-1]).replace("_", " ")
+        if "cat" in b and "cat" not in d:
+            d["cat"] = b["cat"]["value"]
         for k in ("de", "en"):
             if k in b and k not in d:
                 d[k] = urllib.parse.unquote(b[k]["value"].rsplit("/", 1)[-1]).replace("_", " ")
@@ -130,6 +167,29 @@ def licenses(files):
     return out
 
 
+def _cands(j):
+    out = []
+    for p in j.get("query", {}).get("pages", {}).values():
+        ii = (p.get("imageinfo") or [{}])[0]
+        lic = ((ii.get("extmetadata") or {}).get("LicenseShortName") or {}).get("value", "")
+        out.append((p["title"][5:], lic, ii.get("width", 0), ii.get("height", 0)))
+    return out
+
+
+def category_photo(cat, place):
+    j = get(COMMONS, {"action": "query", "format": "json", "generator": "categorymembers", "gcmtitle": "Category:" + cat,
+                      "gcmtype": "file", "gcmlimit": 60, "prop": "imageinfo", "iiprop": "extmetadata|size"})
+    return pick(_cands(j), place)
+
+
+def geo_photo_strict(lat, lon, place):
+    j = get(COMMONS, {"action": "query", "format": "json", "generator": "geosearch", "ggscoord": f"{lat}|{lon}",
+                      "ggsradius": 2000, "ggsnamespace": 6, "ggslimit": 50, "prop": "imageinfo",
+                      "iiprop": "extmetadata|size"})
+    c = [x for x in _cands(j) if name_in(x[0], place)]
+    return pick(c, place)
+
+
 def geo_photo(lat, lon):
     j = get(COMMONS, {"action": "query", "format": "json", "generator": "geosearch", "ggscoord": f"{lat}|{lon}",
                       "ggsradius": 2000, "ggsnamespace": 6, "ggslimit": 40, "prop": "imageinfo",
@@ -156,7 +216,7 @@ def main():
     gids = [r[0] for r in smp]
     for i in range(0, len(gids), 80):
         extra.update(wikidata_extra(gids[i:i + 80]))
-    hits = {"p18_schwelle": 0, "wikidata": 0, "wikipedia": 0, "commons_geo": 0, "gesamt": 0}
+    hits = {"p18_schwelle": 0, "wikidata": 0, "wikipedia": 0, "commons_kategorie": 0, "commons_geo_streng": 0, "gesamt": 0}
     by_region = {"Europa": [0, 0], "Rest": [0, 0]}
     examples = []
     for gid, name, cc, lat, lon, score in smp:
@@ -165,7 +225,7 @@ def main():
         by_region[region][0] += 1
         e = extra.get(gid, {})
         found, how = None, None
-        if "p18" in e:
+        if "p18" in e and not NOT_A_PHOTO.search(e["p18"]):
             lic = licenses([e["p18"]]).get(e["p18"], ("",))
             if ALLOWED.match(lic[0]):
                 found, how = e["p18"], "p18_schwelle"
@@ -187,18 +247,25 @@ def main():
                         if ALLOWED.match(lic[0]) and lic[1] >= 600:
                             found, how = f, "wikipedia"
                             break
+        if not found and "cat" in e:
+            try:
+                f = category_photo(e["cat"], name)
+            except Exception:  # noqa: BLE001
+                f = None
+            if f:
+                found, how = f, "commons_kategorie"
         if not found:
             try:
-                f, n = geo_photo(lat, lon)
+                f = geo_photo_strict(lat, lon, name)
             except Exception:  # noqa: BLE001
-                f, n = None, 0
+                f = None
             if f:
-                found, how = f, "commons_geo"
+                found, how = f, "commons_geo_streng"
         if found:
             hits[how] += 1
             hits["gesamt"] += 1
             by_region[region][1] += 1
-            if len(examples) < 60:
+            if how.startswith("commons") or len(examples) < 20:
                 examples.append((how, name, cc, score, found))
         time.sleep(1.0)
       except Exception as e:  # noqa: BLE001
